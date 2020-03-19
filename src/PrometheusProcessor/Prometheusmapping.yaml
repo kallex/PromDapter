@@ -1,0 +1,30 @@
+﻿# Initial 0.7 mapping model
+metadata:
+  description: HWiNFO to Prometheus Metric Mapping data
+
+mapping:
+  - name: IndividualValues
+    patterns: 
+# System/Memory
+    - '(?<MetricCategory>[^ ]+) (?<Entity>Memory) (?<MetricName>Committed|Used|Available|Load)'
+    - '(?<Entity_Memory>)(?<MetricName>Page File Usage)'
+# Cores
+    - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>VID|Clock|Ratio)'
+    - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricCategory>[^ ]+) (?<MetricName>(Effective Clock|Usage|Residency))'
+    - '(?<Entity>Core) (?<CoreNo>\d+) (?<State>[^ ]+) Residency'
+# Memory Timings
+    - '(?<Entity>Memory) (?<MetricName>Clock Ratio|Clock)'
+    - '(?<Entity_Memory>)(?<MetricName>Tcas|Trcd|Trp|Tras|Trc|Trfc|Command Rate)'
+# CPU / Package    
+    - '(?<Entity>CPU) \((?<MetricName>(Tctl/Tdie|average|PPT))\)'
+    - '(?<Entity>CPU) (?<MetricCategory>[^ ]+) \((?<MetricName>(Tdie))\)'
+    - '(?<Entity>CPU|SoC)[ ]*(?<MetricCategory>Core|)[ ]*(?<MetricName>(Voltage|VID|Current)) \((?<MetricCategory>[^)]+)\)'
+    - '(?<Entity>CPU) (?<MetricName>TDC|EDC|PPT Limit|TDC Limit|EDC Limit)'
+    - '(?<Entity>CPU) (?<MetricName>Package Power|Core Power|SoC Power) \((?<MetricCategory>[^)]+)\)'
+    - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>Power) \((?<MetricCategory>[^)]+)\)'
+  - name: AggregateValues
+    patterns:
+    - '(?<AggregationType>Average) (?<MetricName>(Effective Clock))'
+    - '(?<AggregationType>Max) (?<MetricCategory>.*) (?<MetricName>(Usage))'
+    - '(?<AggregationType>Total) (?<MetricCategory>.*) (?<MetricName>(Usage))'
+    
