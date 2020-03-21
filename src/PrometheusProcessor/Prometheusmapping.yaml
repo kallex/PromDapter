@@ -11,7 +11,7 @@ mapping:
 # Cores
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>VID|Clock|Ratio)'
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricCategory>[^ ]+) (?<MetricName>(Effective Clock|Usage|Residency))'
-    - '(?<Entity>Core) (?<CoreNo>\d+) (?<State>[^ ]+) Residency'
+    - '(?<Entity>Core) (?<CoreNo>\d+) (?<State>[^ ]+) (?<MetricName>Residency)'
 # Memory Timings
     - '(?<Entity>Memory) (?<MetricName>Clock Ratio|Clock)'
     - '(?<Entity_Memory>)(?<MetricName>Tcas|Trcd|Trp|Tras|Trc|Trfc|Command Rate)'

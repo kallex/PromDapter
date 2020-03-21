@@ -15,7 +15,12 @@ namespace PromDapterTests
             serviceProcessor.InitializeProcessors();
             var processor = serviceProcessor.DataItemRegexProcessor;
             var service = new HWiNFOProvider();
-            var result = await processor(service);
+            string[] result;
+            //for (int i = 0; i < 10000; i++)
+            {
+                result = await processor(service);
+            }
+            var metricDump = String.Join(Environment.NewLine, result);
         }
     }
 }

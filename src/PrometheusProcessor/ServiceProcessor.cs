@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using PromDapterDeclarations;
+using SharpYaml.Model;
 
 namespace PrometheusProcessor
 {
@@ -45,17 +48,45 @@ namespace PrometheusProcessor
             DataItemRegexProcessor = async service =>
             {
                 await service.Open();
-                var dataItems = await service.GetDataItems();
+                var dataItems = await service.GetDataItems() ;
                 await service.Close(true);
+
+                if (dataItems == null)
+                    return new string[0];
+
+                const double MinimumAmountPerCore = 100.0;
+                var itemCount = dataItems.Length;
+                // Above 4 we're starting to get diminishing returns; tested on 16 Core Ryzen 3950X with 370 metrics
+                // thus we estimate around 100 per core is sensible metric worthwhile the scheduling
+                var degreeOfParallelism = (int) Math.Ceiling(itemCount / MinimumAmountPerCore);
+                ConcurrentBag<string[]> parallelBag = new ConcurrentBag<string[]>();
+
                 Parallel.ForEach(dataItems, new ParallelOptions()
                     {
-                        MaxDegreeOfParallelism = 1
+                        MaxDegreeOfParallelism = degreeOfParallelism
                     },
                     item =>
-                {
-                    var metadata = RegexMapData.GetSensorMetadata(item.Name);
-                });
-                string[] result = null;
+                    {
+                        var metadata = RegexMapData.GetSensorMetadata(item.Name);
+                        if (metadata == (null, null))
+                            return;
+                        var metadataDict = new Dictionary<string, string>(metadata.MetadataDictionary);
+                        if (!metadataDict.TryGetValue("MetricName", out var metricName))
+                        {
+                            Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                            return;
+                        }
+                        metadataDict.Add("unit", item.Unit);
+                        metadataDict.Add("category", item.Category);
+                        metadataDict.Add("sensor", item.Name);
+                        metadataDict.Add("source", item.Source.SourceName);
+                        var categoryParts = metadataDict.Keys.Select(key => $"{key}=\"{metadataDict[key]}\"").ToArray();
+                        var categoryString = String.Join(",", categoryParts);
+                        var promStr =
+                            $"{metricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
+                        parallelBag.Add(new[] {promStr});
+                    });
+                var result = parallelBag.SelectMany(item => item).ToArray();
                 return result;
             };
 
