@@ -80,14 +80,19 @@ namespace PrometheusProcessor
                         metadataDict.Add("category", item.Category);
                         metadataDict.Add("sensor", item.Name);
                         metadataDict.Add("source", item.Source.SourceName);
-                        var categoryParts = metadataDict.Keys.Select(key => $"{key}=\"{metadataDict[key]}\"").ToArray();
+                        var categoryParts = metadataDict.Keys.Select(key => $"{cleanupValue(key)}=\"{metadataDict[key]}\"").ToArray();
                         var categoryString = String.Join(",", categoryParts);
                         var promStr =
-                            $"{metricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
+                            $"{cleanupValue(metricName)}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
                         parallelBag.Add(new[] {promStr});
                     });
                 var result = parallelBag.SelectMany(item => item).ToArray();
                 return result;
+
+                string cleanupValue(string value)
+                {
+                    return value.ToLowerInvariant().Replace(" ", "_");
+                }
             };
 
         }

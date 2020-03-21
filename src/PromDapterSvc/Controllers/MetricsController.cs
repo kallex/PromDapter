@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using PrometheusProcessor;
+using SensorMonHTTP;
 
 namespace PromDapterSvc.Controllers
 {
@@ -20,11 +22,17 @@ namespace PromDapterSvc.Controllers
         }
 
         [HttpGet]
-        public ContentResult Get()
+        public async Task<ContentResult> Get()
         {
-            string metricContent = "test";
-            var result = Content(metricContent);
-            return result;
+
+            var serviceProcessor = new ServiceProcessor();
+            serviceProcessor.InitializeProcessors();
+            var processor = serviceProcessor.DataItemRegexProcessor;
+            var service = new HWiNFOProvider();
+            var processingResult = await processor(service);
+            var textContent = String.Join(Environment.NewLine, processingResult);
+            var content = Content(textContent);
+            return content;
         }
     }
 }
