@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
@@ -27,7 +28,13 @@ namespace PrometheusProcessor
         public void InitializeRegexDict()
         {
             //var yamlContent = await File.ReadAllTextAsync();
-            const string fileName = "Prometheusmapping.yaml";
+            var fileName = "Prometheusmapping.yaml";
+            var commonAppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var commonFilePath = Path.Combine(commonAppDataFolder, "PromDapter", fileName);
+            if (File.Exists(commonFilePath))
+            {
+                fileName = commonFilePath;
+            }
             object obj = null;
             using (var textStream = File.OpenText(fileName))
             {
