@@ -61,7 +61,7 @@ namespace PromDapterSvc.Controllers
                 }
                 if (serviceProcessor == null)
                 {
-                    prefix = Configuration?["PrometheusMetricPrefix"];
+                    prefix = Configuration?["PrometheusMetricPrefix"] ?? "hw";
                     serviceProcessor = new ServiceProcessor();
                     serviceProcessor.InitializeProcessors(prefix);
                     Prefix = prefix;
