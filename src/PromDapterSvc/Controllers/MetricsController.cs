@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,14 @@ namespace PromDapterSvc.Controllers
         [Route("{filter}")]
         public async Task<ContentResult> Get(string filter = null)
         {
+            /*
+            var gcSettings = new
+            {
+                GCSettings.IsServerGC,
+                GCSettings.LargeObjectHeapCompactionMode,
+                GCSettings.LatencyMode
+            };
+            */
             const string DebugFilterName = "debugerror";
             const string ResetFilterName = "reset";
             bool allowedAccess = await Semaphore.WaitAsync(3000);
@@ -52,7 +61,7 @@ namespace PromDapterSvc.Controllers
                 }
                 if (serviceProcessor == null)
                 {
-                    prefix = Configuration["PrometheusMetricPrefix"];
+                    prefix = Configuration?["PrometheusMetricPrefix"];
                     serviceProcessor = new ServiceProcessor();
                     serviceProcessor.InitializeProcessors(prefix);
                     Prefix = prefix;
@@ -85,7 +94,12 @@ namespace PromDapterSvc.Controllers
             }
             finally
             {
+                //GC.WaitForFullGCComplete();
+                //GC.WaitForPendingFinalizers();
+                //GC.Collect();
+                //GC.WaitForFullGCComplete();
                 Semaphore.Release();
+                //GC.Collect();
             }
         }
     }

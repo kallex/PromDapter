@@ -12,5 +12,8 @@
     <ProjectReference Include="..\PrometheusProcessor\PrometheusProcessor.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
 
 </Project>
