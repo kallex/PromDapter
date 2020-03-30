@@ -6,7 +6,7 @@ mapping:
   - name: IndividualValues
     patterns: 
 # System/Memory
-    - '(?<MetricCategory>[^ ]+) (?<Entity>Memory) (?<MetricName>Committed|Used|Available|Load)'
+    - '(?<MetricCategory>[^ ]+) (?<Entity>Memory) (?<MetricName>Commited|Used|Available|Load)'
     - '(?<Entity_Memory>)(?<MetricName>Page File Usage)'
 # Cores
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>VID|Clock|Ratio)'
@@ -16,12 +16,22 @@ mapping:
     - '(?<Entity>Memory) (?<MetricName>Clock Ratio|Clock)'
     - '(?<Entity_Memory>)(?<MetricName>Tcas|Trcd|Trp|Tras|Trc|Trfc|Command Rate)'
 # CPU / Package    
+    - '(?<Entity_CPU>)(?<MetricCategory>Package) (?<State>[^ ]+) (?<MetricName>Residency)'
     - '(?<Entity>CPU) \((?<MetricName>(Tctl/Tdie|average|PPT))\)'
     - '(?<Entity>CPU) (?<MetricCategory>[^ ]+) \((?<MetricName>(Tdie))\)'
     - '(?<Entity>CPU|SoC)[ ]*(?<MetricCategory>Core|)[ ]*(?<MetricName>(Voltage|VID|Current)) \((?<MetricCategory>[^)]+)\)'
     - '(?<Entity>CPU) (?<MetricName>TDC|EDC|PPT Limit|TDC Limit|EDC Limit)'
     - '(?<Entity>CPU) (?<MetricName>Package Power|Core Power|SoC Power) \((?<MetricCategory>[^)]+)\)'
+    - '(?<Entity_CPU>)(?<MetricName>Core\+SoC Power) \((?<MetricCategory>[^)]+)\)'
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>Power) \((?<MetricCategory>[^)]+)\)'
+# CPU Infra
+    - '(?<Entity>Bus) (?<MetricName>Clock)'
+    - '(?<Entity>Infinity Fabric|Memory Controller) (?<MetricName>Clock)[ ]*\((?<MetricCategory>[^)]+)\)'
+    - '(?<Entity_CPU>)(?<MetricName>Thermal Throttling)[ ]*\((?<MetricCategory>[^)]+)\)'
+# GPU
+    - '(?<Entity>GPU) (?<MetricName>Temperature|Core Voltage|Fan|Power|Clock|Memory Clock|Video Clock|Core Load|Memory Controller Load|Video Engine Load|Bus Load|Memory Usage|D3D Usage|VR Usage)'
+    - '(?<Entity>GPU) (?<MetricName>Memory Allocated|D3D Memory Dedicated|D3D Memory Dynamic)'
+    - '(?<Entity_GPU>)(?<MetricName>PCIe Link Speed)'
   - name: AggregateValues
     patterns:
     - '(?<AggregationType>Average) (?<MetricName>(Effective Clock))'
