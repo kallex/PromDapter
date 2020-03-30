@@ -10,10 +10,10 @@
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="Manufacturer" Value="ProtonIT Oy"/>
-    <ROW Property="ProductCode" Value="1033:{F42F97ED-18F3-4612-8287-95FE0B7A1375} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{C335CF6D-69D4-4019-B59F-9BD40DCD15C8} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="PromDapter"/>
-    <ROW Property="ProductVersion" Value="0.9.4" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.5" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{9561E320-7E1E-4A89-BA83-A480C957B61C}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
