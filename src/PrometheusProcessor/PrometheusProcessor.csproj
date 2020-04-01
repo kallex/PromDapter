@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HWiNFODataProvider" Version="1.0.0" />
+    <PackageReference Include="HWiNFODataProvider" Version="1.0.3" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="SharpYaml" Version="1.6.6" />
   </ItemGroup>
