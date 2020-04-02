@@ -10,10 +10,10 @@
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="Manufacturer" Value="ProtonIT Oy"/>
-    <ROW Property="ProductCode" Value="1033:{C335CF6D-69D4-4019-B59F-9BD40DCD15C8} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{C35C286A-D07D-4916-AB57-C105D53D08AA} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="PromDapter"/>
-    <ROW Property="ProductVersion" Value="0.9.5" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.8" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{9561E320-7E1E-4A89-BA83-A480C957B61C}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -48,7 +48,6 @@
     <ROW File="appsettings.json" Component_="appsettings.Development.json" FileName="APPSET~2.JSO|appsettings.json" Attributes="0" SourcePath="..\..\src\PromDapterSvc\bin\Release\netcoreapp3.1\win10-x64\publish\appsettings.json" SelfReg="false"/>
     <ROW File="PromDapterSvc.exe" Component_="PromDapterSvc.exe" FileName="PROMDA~1.EXE|PromDapterSvc.exe" Attributes="0" SourcePath="..\..\src\PromDapterSvc\bin\Release\netcoreapp3.1\win10-x64\publish\PromDapterSvc.exe" SelfReg="false" DigSign="true"/>
     <ROW File="PromDapterSvc.pdb" Component_="PromDapterSvc.exe" FileName="PROMDA~1.PDB|PromDapterSvc.pdb" Attributes="0" SourcePath="..\..\src\PromDapterSvc\bin\Release\netcoreapp3.1\win10-x64\publish\PromDapterSvc.pdb" SelfReg="false"/>
-    <ROW File="web.config" Component_="appsettings.Development.json" FileName="WEB~1.CON|web.config" Attributes="0" SourcePath="..\..\src\PromDapterSvc\bin\Release\netcoreapp3.1\win10-x64\publish\web.config" SelfReg="false"/>
     <ROW File="Prometheusmapping.yaml_1" Component_="Prometheusmapping.yaml" FileName="PROMET~1.YAM|Prometheusmapping.yaml" Attributes="0" SourcePath="..\..\src\PromDapterSvc\bin\Release\netcoreapp3.1\win10-x64\publish\Prometheusmapping.yaml" SelfReg="false"/>
     <ROW File="Prometheusmapping.yaml" Component_="appsettings.Development.json" FileName="PROMET~1.YAM|Prometheusmapping.yaml" Attributes="0" SourcePath="..\..\src\PromDapterSvc\bin\Release\netcoreapp3.1\win10-x64\publish\Prometheusmapping.yaml" SelfReg="false"/>
   </COMPONENT>
@@ -81,6 +80,7 @@
     <ROW Action="AI_DeleteRLzma" Description="Deleting files extracted from archive" DescriptionLocId="ActionText.Description.AI_DeleteLzma" TemplateLocId="-"/>
     <ROW Action="AI_ExtractFiles" Description="Extracting files from archive" DescriptionLocId="ActionText.Description.AI_ExtractLzma" TemplateLocId="-"/>
     <ROW Action="AI_ExtractLzma" Description="Extracting files from archive" DescriptionLocId="ActionText.Description.AI_ExtractLzma" TemplateLocId="-"/>
+    <ROW Action="LaunchFile" Description="Adding Event Source"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiAppSearchComponent">
     <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_LM" Builds="DefaultBuild"/>
@@ -90,6 +90,7 @@
     <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
     <ROW Name="aicustact.dll" SourcePath="&lt;AI_CUSTACTS&gt;aicustact.dll"/>
     <ROW Name="lzmaextractor.dll" SourcePath="&lt;AI_CUSTACTS&gt;lzmaextractor.dll"/>
+    <ROW Name="viewer.exe" SourcePath="&lt;AI_CUSTACTS&gt;viewer.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlComponent">
     <ROW Dialog_="FatalError" Control="Cancel" Type="PushButton" X="1" Y="1" Width="1" Height="1" Attributes="1" Text="[ButtonText_Cancel]" Order="300" TextLocId="-" MsiKey="FatalError#Cancel" Options="1"/>
@@ -166,6 +167,7 @@
     <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
+    <ROW Action="LaunchFile" Type="3138" Source="viewer.exe" Target="/EnforcedRunAsAdmin eventcreate.exe /ID 1 /L APPLICATION /T INFORMATION /SO PromDapterSvc /D &quot;Event Source Created&quot;" Options="1"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[ProgramFiles64Folder][ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
@@ -197,6 +199,7 @@
     <ROW Action="AI_ExtractFiles" Sequence="3998" Builds="DefaultBuild"/>
     <ROW Action="AI_DATA_SETTER" Sequence="3997"/>
     <ROW Action="AI_EstimateExtractFiles" Sequence="3999" Builds="DefaultBuild"/>
+    <ROW Action="LaunchFile" Condition="( NOT Installed )" Sequence="6401"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>

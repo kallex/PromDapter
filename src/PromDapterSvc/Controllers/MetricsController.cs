@@ -35,14 +35,6 @@ namespace PromDapterSvc.Controllers
         [Route("{filter}")]
         public async Task<ContentResult> Get(string filter = null)
         {
-            /*
-            var gcSettings = new
-            {
-                GCSettings.IsServerGC,
-                GCSettings.LargeObjectHeapCompactionMode,
-                GCSettings.LatencyMode
-            };
-            */
             const string DebugFilterName = "debugerror";
             const string ResetFilterName = "reset";
             bool allowedAccess = await Semaphore.WaitAsync(3000);
@@ -57,16 +49,27 @@ namespace PromDapterSvc.Controllers
                 {
                     Prefix = null;
                     ServiceProcessor = null;
+                    _logger?.Log(LogLevel.Information, "Cache Reset");
                     return Content("Resetted");
                 }
                 if (serviceProcessor == null)
                 {
-                    prefix = Configuration?["PrometheusMetricPrefix"] ?? "hw";
+                    var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
+                    const string defaultPrefix = "hw";
+                    if (String.IsNullOrEmpty(configuredPrefix))
+                    {
+                        _logger.LogWarning($"No prefix defined in configuration; defaulting to {defaultPrefix}");
+                        prefix = defaultPrefix;
+                    }
+                    else
+                        prefix = configuredPrefix;
+                    prefix = configuredPrefix;
                     serviceProcessor = new ServiceProcessor();
                     serviceProcessor.InitializeProcessors(prefix);
                     Prefix = prefix;
                     ServiceProcessor = serviceProcessor;
-                } 
+                    _logger?.Log(LogLevel.Information, "Cache Initialized");
+                }
                 var processor = serviceProcessor.DataItemRegexProcessor;
                 var service = new HWiNFOProvider();
                 IEnumerable<string> processingResult = await processor(service);
@@ -84,22 +87,17 @@ namespace PromDapterSvc.Controllers
             {
                 ServiceProcessor = null;
                 Prefix = null;
+                _logger.LogCritical(ex, "Unhandled error");
                 if (filter == DebugFilterName)
                 {
                     var content = Content(ex.ToString());
                     return content;
                 }
-
                 throw;
             }
             finally
             {
-                //GC.WaitForFullGCComplete();
-                //GC.WaitForPendingFinalizers();
-                //GC.Collect();
-                //GC.WaitForFullGCComplete();
                 Semaphore.Release();
-                //GC.Collect();
             }
         }
     }
