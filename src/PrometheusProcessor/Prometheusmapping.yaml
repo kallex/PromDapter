@@ -32,9 +32,19 @@ mapping:
     - '(?<Entity>GPU) (?<MetricName>Temperature|Core Voltage|Fan|Power|Clock|Memory Clock|Video Clock|Core Load|Memory Controller Load|Video Engine Load|Bus Load|Memory Usage|D3D Usage|VR Usage)'
     - '(?<Entity>GPU) (?<MetricName>Memory Allocated|D3D Memory Dedicated|D3D Memory Dynamic)'
     - '(?<Entity_GPU>)(?<MetricName>PCIe Link Speed)'
+    - '(?<Entity_GPU>)(?<MetricName>Performance Limit) - (?<MetricCategoy>Power|Thermal|Reliability Voltage|Max Operating Voltage|Utilization|SLI GPUBoost Sync)'
+    - 'Total (?<Entity>GPU) (?<MetricName>Power) (?<MetricCategory>.*)'
+# Network
+    - '(?<Entity_Network>)Current (?<MetricName>DL rate|UL rate)'
+# S.M.A.R.T.
+    - '(?<Entity>Drive) (Airflow )*(?<MetricName>Temperature 2|Temperature|Remaining Life|Failure|Warning)'
+# Drive
+    - '(?<Entity_Drive>)(?<MetricName>Read Activity|Write Activity|Total Activity|Read Rate|Write Rate)'
   - name: AggregateValues
     patterns:
     - '(?<AggregationType>Average) (?<MetricName>(Effective Clock))'
     - '(?<AggregationType>Max) (?<MetricCategory>.*) (?<MetricName>(Usage))'
     - '(?<AggregationType>Total) (?<MetricCategory>.*) (?<MetricName>(Usage))'
-    
+    - '(?<Entity_Network>)(?<AggregationType>Total) (?<MetricName>DL|UL)'
+    - '(?<Entity_Drive>)(?<AggregationType>Total) (?<MetricName>Host Writes|Host Reads)'
+#    - '(?<Entity_Drive>)(?<MetricName>Read|Write) (?<AggregationType>Total)' # Total only over monitoring session time, since start of HWiNFO

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
@@ -31,7 +32,7 @@ namespace PrometheusProcessor
             var fileName = "Prometheusmapping.yaml";
             var commonAppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             var commonFilePath = Path.Combine(commonAppDataFolder, "PromDapter", fileName);
-            if (File.Exists(commonFilePath))
+            if (File.Exists(commonFilePath) && !Debugger.IsAttached)
             {
                 fileName = commonFilePath;
             }
@@ -50,7 +51,7 @@ namespace PrometheusProcessor
                 string name = mapping["name"];
                 string[] patterns = ((List<object>)mapping["patterns"]).Cast<string>().ToArray();
 
-                var regexes = patterns.Select(item => new Regex(item,
+                var regexes = patterns.Select(item => new Regex(item.StartsWith("^") ? item : "^" + item,
                         RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.Singleline))
                     .ToArray();
                 allRegexes.AddRange(regexes);

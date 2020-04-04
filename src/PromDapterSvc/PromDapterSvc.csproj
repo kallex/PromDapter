@@ -15,6 +15,11 @@
   <ItemGroup>
     <ProjectReference Include="..\PrometheusProcessor\PrometheusProcessor.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Prometheusmapping.yaml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <PropertyGroup>
     <ServerGarbageCollection>false</ServerGarbageCollection>
   </PropertyGroup>

@@ -63,7 +63,6 @@ namespace PromDapterSvc.Controllers
                     }
                     else
                         prefix = configuredPrefix;
-                    prefix = configuredPrefix;
                     serviceProcessor = new ServiceProcessor();
                     serviceProcessor.InitializeProcessors(prefix);
                     Prefix = prefix;
