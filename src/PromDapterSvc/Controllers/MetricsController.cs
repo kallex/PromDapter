@@ -55,7 +55,7 @@ namespace PromDapterSvc.Controllers
                 if (serviceProcessor == null)
                 {
                     var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
-                    const string defaultPrefix = "hw";
+                    const string defaultPrefix = "hwi_";
                     if (String.IsNullOrEmpty(configuredPrefix))
                     {
                         _logger.LogWarning($"No prefix defined in configuration; defaulting to {defaultPrefix}");
