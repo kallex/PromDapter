@@ -69,7 +69,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "max(hw_core_clock_mhz) by(instance)",
+          "expr": "max(hwi_core_clock_mhz) by(instance)",
           "instant": false,
           "legendFormat": "{{instance}}",
           "refId": "A"
@@ -126,7 +126,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_gpu_clock_mhz",
+          "expr": "hwi_gpu_clock_mhz",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_usage{category=\"CPU\"}",
+          "expr": "hwi_usage{category=\"CPU\"}",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -245,7 +245,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_cpu_tctltdie_c",
+          "expr": "hwi_cpu_tctltdie_c",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -299,7 +299,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_memory_load{sensor=\"Physical Memory Load\"}",
+          "expr": "hwi_memory_load{sensor=\"Physical Memory Load\"}",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -371,7 +371,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_memory_used_mb{category=\"Physical\"}",
+          "expr": "hwi_memory_used_mb{category=\"Physical\"}",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -443,12 +443,12 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_network_dl_rate_kbs",
+          "expr": "hwi_network_dl_rate_kbs",
           "legendFormat": " DL",
           "refId": "A"
         },
         {
-          "expr": "hw_network_up_rate_kbs",
+          "expr": "hwi_network_up_rate_kbs",
           "legendFormat": " UP",
           "refId": "B"
         }
@@ -499,7 +499,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "hw_cpu_package_power_w",
+          "expr": "hwi_cpu_package_power_w",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}} {{sensor}}",
@@ -607,7 +607,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "hw_gpu_power_w  ",
+          "expr": "hwi_gpu_power_w  ",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{instance}} {{sensor}}",
@@ -698,12 +698,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "hw_cpu_package_power_w",
+          "expr": "hwi_cpu_package_power_w",
           "legendFormat": "{{instance}} CPU",
           "refId": "A"
         },
         {
-          "expr": "hw_gpu_power_w",
+          "expr": "hwi_gpu_power_w",
           "legendFormat": "{{instance}} GPU",
           "refId": "B"
         }
@@ -804,7 +804,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_gpu_core_load",
+          "expr": "hwi_gpu_core_load",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -858,7 +858,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_gpu_temperature_c",
+          "expr": "hwi_gpu_temperature_c",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -912,7 +912,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_gpu_fan",
+          "expr": "hwi_gpu_fan",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -976,7 +976,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "hw_gpu_memory_allocated_mb",
+          "expr": "hwi_gpu_memory_allocated_mb",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -1030,7 +1030,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "max(hw_drive_total_activity) by(instance)",
+          "expr": "max(hwi_drive_total_activity) by(instance)",
           "legendFormat": "{{instance}}",
           "refId": "A"
         }
@@ -1081,7 +1081,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(hw_cpu_package_power_w) + sum(hw_gpu_power_w))*24*365/1000",
+          "expr": "(sum(hwi_cpu_package_power_w) + sum(hwi_gpu_power_w))*24*365/1000",
           "legendFormat": "Annual kWh Estimate",
           "refId": "A"
         }
@@ -1168,7 +1168,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(hw_cpu_package_power_w) + sum(hw_gpu_power_w))*(0.05+0.07)*24*365/1000",
+          "expr": "(sum(hwi_cpu_package_power_w) + sum(hwi_gpu_power_w))*(0.05+0.07)*24*365/1000",
           "refId": "A"
         }
       ],
@@ -1272,7 +1272,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "sum(hw_cpu_thermal_throttling_yesno) by(instance)",
+          "expr": "sum(hwi_cpu_thermal_throttling_yesno) by(instance)",
           "format": "time_series",
           "legendFormat": "{{instance}}",
           "refId": "A"
@@ -1342,7 +1342,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "sum(hw_drive_failure_yesno) by(instance) + sum(hw_drive_warning_yesno) by(instance)",
+          "expr": "sum(hwi_drive_failure_yesno) by(instance) + sum(hwi_drive_warning_yesno) by(instance)",
           "format": "time_series",
           "legendFormat": "{{instance}}",
           "refId": "A"
@@ -1399,7 +1399,7 @@
       "pluginVersion": "6.5.2",
       "targets": [
         {
-          "expr": "min(hw_drive_remaining_life) by(instance)",
+          "expr": "min(hwi_drive_remaining_life) by(instance)",
           "format": "time_series",
           "legendFormat": "{{instance}}",
           "refId": "A"
