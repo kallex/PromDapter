@@ -9,7 +9,7 @@
     <EazfuscatorCompatibilityVersion>2020.1</EazfuscatorCompatibilityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HWiNFODataProvider" Version="1.0.3" />
+    <PackageReference Include="HWiNFODataProvider" Version="1.0.4" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="3.1.3" />
   </ItemGroup>
   <ItemGroup>
