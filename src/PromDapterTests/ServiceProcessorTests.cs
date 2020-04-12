@@ -1,9 +1,11 @@
 using System;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using JetBrains.dotMemoryUnit;
+using PromDapterDeclarations;
 using PrometheusProcessor;
 using SensorMonHTTP;
 using Xunit;
@@ -19,6 +21,14 @@ namespace PromDapterTests
                 message => outputHelper.WriteLine(message));
         }
 
+
+        [Fact]
+        public async Task GetServicesTask()
+        {
+            var serviceInstances = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
+            Assert.True(serviceInstances.Any());
+            Assert.True(serviceInstances.All(item => item is IPromDapterService));
+        }
 
         [Fact]
         public async Task DataItemRegexProcessorTest()

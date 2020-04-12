@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -170,6 +171,43 @@ namespace PrometheusProcessor
 
         }
 
-        
+        public static async Task<IPromDapterService[]> GetServices(Assembly requestingAssembly)
+        {
+            var serviceTypes = await GetServiceTypes(requestingAssembly);
+            var serviceInstances = serviceTypes.Select(item => Activator.CreateInstance(item))
+                .Cast<IPromDapterService>().ToArray();
+            return serviceInstances;
+        }
+
+        public static async Task<Type[]> GetServiceTypes(Assembly requestingAssembly)
+        {
+            var assembly = requestingAssembly;
+
+            var dependencyNames = assembly.GetReferencedAssemblies();
+
+            List<Assembly> assemblies = new List<Assembly>();
+            assemblies.Add(assembly);
+            foreach (var dependencyName in dependencyNames)
+            {
+                try
+                {
+                    var referencedAsm = Assembly.Load(dependencyName);
+                    // Try to load the referenced assembly...
+                    assemblies.Add(referencedAsm);
+                }
+                catch
+                {
+                    // Failed to load assembly. Skip it.
+                }
+            }
+
+            var types = assemblies.SelectMany(item => item.GetTypes()).ToArray();
+            var serviceTypes =
+                types.Where(item => item.GetInterfaces().Any(inter => inter == typeof(IPromDapterService)))
+                    .Distinct()
+                    .ToArray();
+            //var serviceTypesByName = types.Where(item => item.GetInterfaces().Any(inter => inter.Name == nameof(IPromDapterService))).ToArray();
+            return serviceTypes;
+        }
     }
 }

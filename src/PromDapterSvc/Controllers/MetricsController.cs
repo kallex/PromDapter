@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using PromDapterDeclarations;
 using PrometheusProcessor;
 using SensorMonHTTP;
 
@@ -26,6 +28,7 @@ namespace PromDapterSvc.Controllers
         }
 
         private static ServiceProcessor ServiceProcessor = null;
+        private IPromDapterService[] Services = null;
         private static string Prefix = null;
 
         private static SemaphoreSlim Semaphore = new SemaphoreSlim(1);
@@ -44,6 +47,7 @@ namespace PromDapterSvc.Controllers
             {
                 var prefix = Prefix;
                 var serviceProcessor = ServiceProcessor;
+                IPromDapterService[] services = Services;
                 bool isResetFilter = filter == ResetFilterName;
                 if (isResetFilter)
                 {
@@ -52,8 +56,10 @@ namespace PromDapterSvc.Controllers
                     _logger?.Log(LogLevel.Information, "Cache Reset");
                     return Content("Resetted");
                 }
+
                 if (serviceProcessor == null)
                 {
+                    
                     var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
                     const string defaultPrefix = "hwi_";
                     if (String.IsNullOrEmpty(configuredPrefix))
@@ -66,12 +72,19 @@ namespace PromDapterSvc.Controllers
                     serviceProcessor = new ServiceProcessor();
                     serviceProcessor.InitializeProcessors(prefix);
                     Prefix = prefix;
+                    
                     ServiceProcessor = serviceProcessor;
+                    services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
+                    Services = services;
                     _logger?.Log(LogLevel.Information, "Cache Initialized");
                 }
                 var processor = serviceProcessor.DataItemRegexProcessor;
-                var service = new HWiNFOProvider();
-                IEnumerable<string> processingResult = await processor(service);
+                {
+                    var dump = new HWiNFOProvider();
+                }
+                var processingTasks = services.Select(item => processor(item));
+                await Task.WhenAll(processingTasks);
+                IEnumerable<string> processingResult = processingTasks.SelectMany(item => item.Result);
                 if (filter != null && filter.ToLower() != DebugFilterName)
                 {
                     processingResult = processingResult.Where(item =>
@@ -99,5 +112,6 @@ namespace PromDapterSvc.Controllers
                 Semaphore.Release();
             }
         }
+
     }
 }
