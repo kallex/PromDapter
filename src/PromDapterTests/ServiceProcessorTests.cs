@@ -31,34 +31,53 @@ namespace PromDapterTests
         }
 
         [Fact]
-        public async Task DataItemRegexProcessorTest()
+        public async Task DataItemRegexPrometheusProcessorTest()
         {
-            string[] result = null;
+            (string mimeType, object data) result = (null, null);
             for (int i = 0; i < 1000; i++)
             {
                 var serviceProcessor = new ServiceProcessor();
                 serviceProcessor.InitializeProcessors();
-                var processor = serviceProcessor.DataItemRegexProcessor;
+                var processor = serviceProcessor.DataItemRegexPrometheusProcessor;
                 var service = new HWiNFOProvider();
-                result = await processor(service);
+                result = await processor(service, null);
             }
             var metricDump = String.Join(Environment.NewLine, result);
         }
+
+        [Fact]
+        public async Task DataItemRegexJsonProcessorTest()
+        {
+            (string mimeType, object data) result = (null, null);
+            for (int i = 0; i < 1000; i++)
+            {
+                var serviceProcessor = new ServiceProcessor();
+                serviceProcessor.InitializeProcessors();
+                var processor = serviceProcessor.DataItemRegexJsonProcessor;
+                var service = new HWiNFOProvider();
+                result = await processor(service, null);
+            }
+
+            var textDump = result.data?.ToString();
+            var metricDump = String.Join(Environment.NewLine, textDump);
+        }
+
 
 
         [Fact]
         public async Task ServiceProcessorMemoryLeakTest()
         {
-            string[] result = null;
+            (string mimeType, object data) result = (null, null);
             for (int i = 0; i < 100; i++)
             {
                 var serviceProcessor = new ServiceProcessor();
                 serviceProcessor.InitializeProcessors();
-                var processor = serviceProcessor.DataItemRegexProcessor;
+                var processor = serviceProcessor.DataItemRegexPrometheusProcessor;
                 var service = new HWiNFOProvider();
-                result = await processor(service);
+                result = await processor(service, null);
             }
-            var metricDump = String.Join(Environment.NewLine, result);
+            var textDump = result.data?.ToString();
+            var metricDump = String.Join(Environment.NewLine, textDump);
             assertMemoryState();
         }
 

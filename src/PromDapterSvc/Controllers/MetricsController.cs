@@ -28,27 +28,29 @@ namespace PromDapterSvc.Controllers
         }
 
         private static ServiceProcessor ServiceProcessor = null;
-        private IPromDapterService[] Services = null;
+        private static IPromDapterService[] Services = null;
         private static string Prefix = null;
 
         private static SemaphoreSlim Semaphore = new SemaphoreSlim(1);
 
+        const string DebugFilterName = "debugerror";
+        const string ResetFilterName = "reset";
+        const string JsonFilterName = "json";
+
+
         [HttpGet]
         [Route("")]
         [Route("{filter}")]
-        public async Task<ContentResult> Get(string filter = null)
+        public async Task<ContentResult> Get(string filter = null, string option = null)
         {
-            const string DebugFilterName = "debugerror";
-            const string ResetFilterName = "reset";
             bool allowedAccess = await Semaphore.WaitAsync(3000);
             if (!allowedAccess)
                 return Content("Semaphore failed");
             try
             {
                 var prefix = Prefix;
-                var serviceProcessor = ServiceProcessor;
-                IPromDapterService[] services = Services;
                 bool isResetFilter = filter == ResetFilterName;
+                bool isJsonFilter = filter == JsonFilterName;
                 if (isResetFilter)
                 {
                     Prefix = null;
@@ -57,42 +59,21 @@ namespace PromDapterSvc.Controllers
                     return Content("Resetted");
                 }
 
-                if (serviceProcessor == null)
+                if (ServiceProcessor == null)
                 {
-                    
-                    var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
-                    const string defaultPrefix = "hwi_";
-                    if (String.IsNullOrEmpty(configuredPrefix))
-                    {
-                        _logger.LogWarning($"No prefix defined in configuration; defaulting to {defaultPrefix}");
-                        prefix = defaultPrefix;
-                    }
-                    else
-                        prefix = configuredPrefix;
-                    serviceProcessor = new ServiceProcessor();
-                    serviceProcessor.InitializeProcessors(prefix);
-                    Prefix = prefix;
-                    
-                    ServiceProcessor = serviceProcessor;
-                    services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
-                    Services = services;
-                    _logger?.Log(LogLevel.Information, "Cache Initialized");
-                }
-                var processor = serviceProcessor.DataItemRegexProcessor;
-                {
-                    var dump = new HWiNFOProvider();
-                }
-                var processingTasks = services.Select(item => processor(item));
-                await Task.WhenAll(processingTasks);
-                IEnumerable<string> processingResult = processingTasks.SelectMany(item => item.Result);
-                if (filter != null && filter.ToLower() != DebugFilterName)
-                {
-                    processingResult = processingResult.Where(item =>
-                        item.Contains(filter, StringComparison.InvariantCultureIgnoreCase));
+                    await initServiceCache();
                 }
 
-                var textContent = String.Join("\n", processingResult);
-                var content = Content(textContent);
+                ContentResult content = null;
+                if (isJsonFilter)
+                {
+                    content = await getJsonContent(option);
+                }
+                else
+                {
+                    content = await getPrometheusContent(filter);
+                }
+
                 return content;
             }
             catch (Exception ex)
@@ -111,6 +92,100 @@ namespace PromDapterSvc.Controllers
             {
                 Semaphore.Release();
             }
+        }
+
+        private async Task initServiceCache()
+        {
+            string prefix;
+            var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
+            const string defaultPrefix = "hwi_";
+            if (String.IsNullOrEmpty(configuredPrefix))
+            {
+                _logger.LogWarning($"No prefix defined in configuration; defaulting to {defaultPrefix}");
+                prefix = defaultPrefix;
+            }
+            else
+                prefix = configuredPrefix;
+
+            var serviceProcessor = new ServiceProcessor();
+            serviceProcessor.InitializeProcessors(prefix);
+            Prefix = prefix;
+
+            ServiceProcessor = serviceProcessor;
+            var services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
+            Services = services;
+            _logger?.Log(LogLevel.Information, "Cache Initialized");
+        }
+
+        private async Task<ContentResult> getPrometheusContent(string filter)
+        {
+            ContentResult content;
+            var processor = ServiceProcessor.DataItemRegexPrometheusProcessor;
+            {
+                var dump = new HWiNFOProvider();
+            }
+            var processingTasks = Services.Select(item => processor(item, null));
+            await Task.WhenAll(processingTasks);
+            var processingResults = processingTasks.Select(item => item.Result).ToArray();
+
+            var validMimeType = System.Net.Mime.MediaTypeNames.Text.Plain;
+            var invalidMimes = processingResults.Where(item => item.mimeType != validMimeType).Select(item => item.mimeType)
+                .Distinct()
+                .OrderBy(item => item)
+                .ToArray();
+            if (invalidMimes.Any())
+            {
+                string errorList = String.Join(", ", invalidMimes);
+                throw new NotSupportedException($"Not supported mime type(s): {errorList}");
+            }
+
+            IEnumerable<string> combinedResults = processingResults
+                .Select(item => item.data as string)
+                .Where(item => item != null)
+                .SelectMany(item => item.Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries))
+                .ToArray();
+
+
+            if (filter != null && filter.ToLower() != DebugFilterName)
+            {
+                combinedResults = combinedResults.Where(item =>
+                    item.Contains(filter, StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            var textContent = String.Join("\n", combinedResults);
+            content = Content(textContent);
+            return content;
+        }
+
+        private async Task<ContentResult> getJsonContent(string option)
+        {
+            ContentResult content;
+            var processor = ServiceProcessor.DataItemRegexJsonProcessor;
+            var processingTasks = Services.Select(item => processor(item, option));
+            await Task.WhenAll(processingTasks);
+            var processingResults = processingTasks.Select(item => item.Result).ToArray();
+
+            var validMimeType = System.Net.Mime.MediaTypeNames.Application.Json;
+            var invalidMimes = processingResults.Where(item => item.mimeType != validMimeType).Select(item => item.mimeType)
+                .Distinct()
+                .OrderBy(item => item)
+                .ToArray();
+            if (invalidMimes.Any())
+            {
+                string errorList = String.Join(", ", invalidMimes);
+                throw new NotSupportedException($"Not supported mime type(s): {errorList}");
+            }
+
+            IEnumerable<string> combinedResults = processingResults
+                .Select(item => item.data as string)
+                .Where(item => item != null)
+                .SelectMany(item => item.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                .ToArray();
+
+
+            var textContent = String.Join("\n", combinedResults);
+            content = Content(textContent);
+            return content;
         }
 
     }
