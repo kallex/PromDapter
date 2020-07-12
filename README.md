@@ -1,6 +1,5 @@
-# PromDapter = Prometheus Adapter
-
-Prometheus CzAdapter
+PromDapter = Prometheus Adapter
+-------------------------------
 
 Currently in Pre-Release/Beta stage
 - Lightly documented
@@ -19,10 +18,17 @@ Setup:
 URLs:
 http://localhost:10445/metrics
 - Serves Prometheus-formed metrics
+
 http://localhost:10445/metrics/help
 - Lists # HELP tagged parts of metrics for (easier?) review of what's available
+
 http://localhost:10445/metrics/reset
 - Resets internal caches (= reloads "C:\ProgramData\PromDapter\Prometheusmapping.yaml" on next request)
+
+JSON support:
+http://localhost:10445/metrics/json
+http://localhost:10445/metrics/json?options=flattenMeta
+
 
 Configuration/Metric definition:
 - Modify C:\ProgramData\PromDapter\Prometheusmapping.yaml (save your copy safely elsewhere and copy over + reset with url above)

@@ -1,9 +1,11 @@
 using System;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using JetBrains.dotMemoryUnit;
+using PromDapterDeclarations;
 using PrometheusProcessor;
 using SensorMonHTTP;
 using Xunit;
@@ -21,34 +23,61 @@ namespace PromDapterTests
 
 
         [Fact]
-        public async Task DataItemRegexProcessorTest()
+        public async Task GetServicesTask()
         {
-            string[] result = null;
+            var serviceInstances = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
+            Assert.True(serviceInstances.Any());
+            Assert.True(serviceInstances.All(item => item is IPromDapterService));
+        }
+
+        [Fact]
+        public async Task DataItemRegexPrometheusProcessorTest()
+        {
+            (string mimeType, object data) result = (null, null);
             for (int i = 0; i < 1000; i++)
             {
                 var serviceProcessor = new ServiceProcessor();
                 serviceProcessor.InitializeProcessors();
-                var processor = serviceProcessor.DataItemRegexProcessor;
+                var processor = serviceProcessor.DataItemRegexPrometheusProcessor;
                 var service = new HWiNFOProvider();
-                result = await processor(service);
+                result = await processor(service, null);
             }
             var metricDump = String.Join(Environment.NewLine, result);
         }
+
+        [Fact]
+        public async Task DataItemRegexJsonProcessorTest()
+        {
+            (string mimeType, object data) result = (null, null);
+            for (int i = 0; i < 1000; i++)
+            {
+                var serviceProcessor = new ServiceProcessor();
+                serviceProcessor.InitializeProcessors();
+                var processor = serviceProcessor.DataItemRegexJsonProcessor;
+                var service = new HWiNFOProvider();
+                result = await processor(service, null);
+            }
+
+            var textDump = result.data?.ToString();
+            var metricDump = String.Join(Environment.NewLine, textDump);
+        }
+
 
 
         [Fact]
         public async Task ServiceProcessorMemoryLeakTest()
         {
-            string[] result = null;
+            (string mimeType, object data) result = (null, null);
             for (int i = 0; i < 100; i++)
             {
                 var serviceProcessor = new ServiceProcessor();
                 serviceProcessor.InitializeProcessors();
-                var processor = serviceProcessor.DataItemRegexProcessor;
+                var processor = serviceProcessor.DataItemRegexPrometheusProcessor;
                 var service = new HWiNFOProvider();
-                result = await processor(service);
+                result = await processor(service, null);
             }
-            var metricDump = String.Join(Environment.NewLine, result);
+            var textDump = result.data?.ToString();
+            var metricDump = String.Join(Environment.NewLine, textDump);
             assertMemoryState();
         }
 
