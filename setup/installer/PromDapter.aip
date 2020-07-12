@@ -17,10 +17,10 @@
     <ROW Property="ARPURLINFOABOUT" Value="https://github.com/kallex/PromDapter/issues"/>
     <ROW Property="CTRLS" Value="1"/>
     <ROW Property="Manufacturer" Value="ProtonIT Oy"/>
-    <ROW Property="ProductCode" Value="1033:{FA9E98E4-D3A3-4B56-BA99-0FE250F3754F} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{6AEBE025-7C08-4B14-9D6F-959B6B049A65} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="PromDapter"/>
-    <ROW Property="ProductVersion" Value="0.9.15" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.16" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{9561E320-7E1E-4A89-BA83-A480C957B61C}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -39,7 +39,7 @@
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="AI_CustomARPName" ComponentId="{4C04D256-9095-40A2-B918-C29F728FCAEC}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{3A93CB82-2FA5-4C95-B273-71C8881267DA}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_DisableModify" ComponentId="{0D376B12-A3DE-41B3-9699-46F4CC709566}" Directory_="APPDIR" Attributes="260" KeyPath="NoModify" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{7CB6BE3A-A5FB-4DF8-A107-91FB512EE48D}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{1815A4F5-9AEC-4539-B602-83A77D0B372B}" Directory_="APPDIR" Attributes="0"/>
