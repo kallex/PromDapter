@@ -27,7 +27,7 @@ http://localhost:10445/metrics/reset
 
 JSON support:
 http://localhost:10445/metrics/json
-http://localhost:10445/metrics/json?options=flattenMeta
+http://localhost:10445/metrics/json?option=flattenMeta
 
 
 Configuration/Metric definition:
