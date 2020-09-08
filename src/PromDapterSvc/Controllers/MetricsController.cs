@@ -33,6 +33,31 @@ namespace PromDapterSvc.Controllers
 
         private static SemaphoreSlim Semaphore = new SemaphoreSlim(1);
 
+        public async Task initServiceProcessor()
+        {
+            var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
+            const string defaultPrefix = "hwi_";
+            string prefix;
+            if (String.IsNullOrEmpty(configuredPrefix))
+            {
+                _logger.LogWarning($"No prefix defined in configuration; defaulting to {defaultPrefix}");
+                prefix = defaultPrefix;
+            }
+            else
+                prefix = configuredPrefix;
+            var serviceProcessor = new ServiceProcessor();
+            serviceProcessor.InitializeProcessors(prefix);
+            Prefix = prefix;
+
+
+            ServiceProcessor = serviceProcessor;
+            var services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
+            Services = services;
+            await serviceProcessor.InitializeServices(services);
+            //serviceProcessor.CurrentProcessor = ServiceProcessor.DataItemRegexProcessor;
+            _logger?.Log(LogLevel.Information, "Cache Initialized");
+        }
+
         const string DebugFilterName = "debugerror";
         const string ResetFilterName = "reset";
         const string JsonFilterName = "json";
@@ -49,6 +74,8 @@ namespace PromDapterSvc.Controllers
             try
             {
                 var prefix = Prefix;
+                var serviceProcessor = ServiceProcessor;
+                IPromDapterService[] services = Services;
                 bool isResetFilter = filter == ResetFilterName;
                 bool isJsonFilter = filter == JsonFilterName;
                 if (isResetFilter)
@@ -59,6 +86,28 @@ namespace PromDapterSvc.Controllers
                     return Content("Resetted");
                 }
 
+                if (ServiceProcessor == null)
+                    await initServiceProcessor();
+                
+
+                /*
+                var processor = serviceProcessor.DataItemRegexProcessor;
+                {
+                    var dump = new HWiNFOProvider();
+                }
+                */
+                //var processingTasks = services.Select(item => processor(item));
+                //await Task.WhenAll(processingTasks);
+                //IEnumerable<string> processingResult = processingTasks.SelectMany(item => item.Result);
+                //IEnumerable<string> processingResult = await serviceProcessor
+                //    .GetPrometheusData();
+                /*
+                if (filter != null && filter.ToLower() != DebugFilterName)
+                {
+                    processingResult = processingResult.Where(item =>
+                        item.Contains(filter, StringComparison.InvariantCultureIgnoreCase));
+                }
+                */
                 if (ServiceProcessor == null)
                 {
                     await initServiceCache();

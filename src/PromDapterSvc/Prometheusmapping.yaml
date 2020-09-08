@@ -1,8 +1,11 @@
-﻿# Initial 0.7 mapping model
+﻿# Initial 0.8 mapping model
 metadata:
   description: HWiNFO to Prometheus Metric Mapping data
 
-mapping:
+mappers:
+- name: HWiNFOProvider
+  assembly: HWiNFOProvider.dll
+  mapping:
   - name: IndividualValues
     patterns: 
     # System/Memory
@@ -48,3 +51,9 @@ mapping:
     #    - '(?<Entity_Network>)(?<AggregationType>Total) (?<MetricName>DL|UL)' # Total only over monitoring session time, since start of HWiNFO
     - '(?<Entity_Drive>)(?<AggregationType>Total) (?<MetricName>Host Writes|Host Reads)'
     #    - '(?<Entity_Drive>)(?<MetricName>Read|Write) (?<AggregationType>Total)' # Total only over monitoring session time, since start of HWiNFO
+- name: Linux
+  procs:
+  - procName:
+    mapping:
+
+   
