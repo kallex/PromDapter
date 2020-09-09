@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PromDapterDeclarations;
+using SensorMonHTTP;
 using SharpYaml.Model;
 
 namespace PrometheusProcessor
@@ -57,7 +58,7 @@ namespace PrometheusProcessor
             {
 
                 await service.Open();
-                var dataItems = await service.GetDataItems() ;
+                var dataItems = await service.GetDataItems((object[]) parameters) ;
                 await service.Close(true);
 
                 if (dataItems == null)
@@ -68,6 +69,8 @@ namespace PrometheusProcessor
                 // Above 4 we're starting to get diminishing returns; tested on 16 Core Ryzen 3950X with 370 metrics
                 // thus we estimate around 100 per core is sensible metric worthwhile the scheduling
                 var degreeOfParallelism = (int) Math.Ceiling(itemCount / MinimumAmountPerCore);
+                if (Debugger.IsAttached)
+                    degreeOfParallelism = 1;
                 var parallelBag = new ConcurrentBag<(string helpString, string typeString, string[] metricLines)>();
 
                 Parallel.ForEach(dataItems, new ParallelOptions()
@@ -77,13 +80,19 @@ namespace PrometheusProcessor
                     item =>
                     {
                         var metadata = RegexMapData.GetSensorMetadata(item.Name);
-                        if (metadata == (null, null))
+                        bool hasMetaData = metadata != (null, null);
+                        bool hasCategoryData = item.CategoryValues?.Any() == true;
+                        if (!hasMetaData && !hasCategoryData)
                             return;
-                        var metadataDict = new Dictionary<string, string>(metadata.MetadataDictionary);
+                        var metadataDict = hasMetaData
+                            ? new Dictionary<string, string>(metadata.MetadataDictionary)
+                            : item.CategoryValues.ToDictionary(kv => kv.Key,
+                                kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object, CultureInfo.InvariantCulture));
                         if (!metadataDict.TryGetValue("MetricName", out var metricName))
                         {
-                            Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
-                            return;
+                            //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                            metricName = item.Name;
+                            //return;
                         }
 
                         var unit = item.Unit;
@@ -144,7 +153,10 @@ namespace PrometheusProcessor
                 const string GroupByName = nameof(groupBy);
 
                 await service.Open();
-                var dataItems = await service.GetDataItems();
+                object[] serviceParams = null;
+                if (service is WMIProvider)
+                    serviceParams = new object[] { "Win32_LogicalDisk" };
+                var dataItems = await service.GetDataItems(serviceParams);
                 await service.Close(true);
 
                 if (dataItems == null)
@@ -161,6 +173,8 @@ namespace PrometheusProcessor
                 // Above 4 we're starting to get diminishing returns; tested on 16 Core Ryzen 3950X with 370 metrics
                 // thus we estimate around 100 per core is sensible metric worthwhile the scheduling
                 var degreeOfParallelism = (int)Math.Ceiling(itemCount / MinimumAmountPerCore);
+                if (Debugger.IsAttached)
+                    degreeOfParallelism = 1;
                 var parallelBag = new ConcurrentBag<(string sourceName, string sensorName, Dictionary<string, object> dataObject)>();
 
                 Parallel.ForEach(dataItems, new ParallelOptions()
@@ -170,14 +184,19 @@ namespace PrometheusProcessor
                     item =>
                     {
                         var metadata = RegexMapData.GetSensorMetadata(item.Name);
-                        if (metadata == (null, null))
+                        bool hasMetaData = metadata != (null, null);
+                        bool hasCategoryData = item.CategoryValues?.Any() == true;
+                        if (!hasMetaData && !hasCategoryData)
                             return;
-                        var metadataDict = metadata.MetadataDictionary;
-                        var objectDict = new Dictionary<string, object>();
+                        var metadataDict = hasMetaData
+                            ? new Dictionary<string, string>(metadata.MetadataDictionary)
+                            : item.CategoryValues.ToDictionary(kv => kv.Key,
+                                kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object, CultureInfo.InvariantCulture));
                         if (!metadataDict.TryGetValue("MetricName", out var metricName))
                         {
-                            Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
-                            return;
+                            //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                            //return;
+                            metricName = item.Name;
                         }
 
                         var unit = item.Unit;
@@ -186,7 +205,8 @@ namespace PrometheusProcessor
                         var sourceName = item.Source.SourceName;
                         var value = item.Value.Object;
                         var valueType = item.Value.Type.Name;
-                        
+
+                        var objectDict = new Dictionary<string, object>();
                         objectDict.Add("unit", unit);
                         objectDict.Add("sensor_type", sensorType);
                         objectDict.Add("sensor", sensorName);

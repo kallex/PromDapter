@@ -72,7 +72,7 @@ namespace SensorMonHTTP.Tests
             var provider = new WMIProvider();
             await provider.Open();
 
-            var dataItems = await provider.GetDataItems(wmiClassName, identifierNames);
+            var dataItems = await provider.GetDataItems(new object[] { wmiClassName, identifierNames });
             dataItems = dataItems.OrderBy(item => item.Source.SourceName).ThenBy(item => item.Name).ToArray();
 
             await provider.Close();

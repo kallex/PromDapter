@@ -25,7 +25,7 @@ namespace SensorMonHTTP
             const string defaultIdentifierName = "Name";
             var result = new List<DataItem>();
 
-            var itemName = itemNameAndIdentifiers.First();
+            var itemName = itemNameAndIdentifiers.First().ToString();
             var identifierNames = (string[]) itemNameAndIdentifiers.Skip(1).FirstOrDefault();
             if (identifierNames?.Any() != true)
                 identifierNames = new[] { defaultIdentifierName };
@@ -37,14 +37,19 @@ namespace SensorMonHTTP
 				foreach (var managementBaseObject in mosResult)
                 {
                     Source source = new Source();
-                    var propNames = managementBaseObject.Properties
+                    var identifierProps = managementBaseObject.Properties
                         .Cast<PropertyData>()
                         .Where(pd => identifierNames.Contains(pd.Name))
-                        .OrderBy(pd => Array.IndexOf(identifierNames, pd.Name))
-                        .Select(pd => pd.Value?.ToString());
-                    // TODO: change source name manipulation to proper MetadataDict => CategoryPart for Prometheus/JSON
-                    source.SourceName = itemName + "_|_" + String.Join("_|_", propNames);
-                    var dataItems = getDataItems(managementBaseObject, source);
+                        .OrderBy(pd => Array.IndexOf(identifierNames, pd.Name)).ToArray();
+                    source.SourceName = itemName;
+                    var categoryValues = identifierProps.ToDictionary(pd => pd.Name, pd => new[] {new DataValue() { Object = pd.Value, Type = pd.Value?.GetType() ?? typeof(object)}});
+                    var dataItems = getDataItems(managementBaseObject, source).ToArray();
+                    foreach (var item in dataItems)
+                    {
+                        item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
+                        //item.CategoryValues.Add("MetricName",
+                        //    new[] {new DataValue() {Object = item.Name, Type = item.Name?.GetType()}});
+                    }
                     result.AddRange(dataItems);
                 }
             }

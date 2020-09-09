@@ -2,7 +2,7 @@
 
 namespace PromDapterDeclarations
 {
-    public delegate Task<DataItem[]> GetDataItems(params object[] parameters);
+    public delegate Task<DataItem[]> GetDataItems(object[] parameters);
     public delegate Task Open(params object[] parameters);
     public delegate Task Close(params object[] parameters);
 

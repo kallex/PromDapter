@@ -16,6 +16,6 @@ namespace PromDapterDeclarations
 
         public DataValue Value { get; set; }
 
-        private Dictionary<string, DataValue[]> CategoryValues { get; set; }
+        public Dictionary<string, DataValue[]> CategoryValues { get; set; }
     }
 }

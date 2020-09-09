@@ -63,6 +63,11 @@ namespace PromDapterSvc.Controllers
         const string JsonFilterName = "json";
 
 
+        private static Dictionary<string, object> ServiceParamDictionary = new Dictionary<string, object>()
+        {
+            {nameof(WMIProvider), new object[] {"Win32_LogicalDisk"}}
+        };
+
         [HttpGet]
         [Route("")]
         [Route("{filter}")]
@@ -120,7 +125,7 @@ namespace PromDapterSvc.Controllers
                 }
                 else
                 {
-                    content = await getPrometheusContent(filter);
+                    content = await getPrometheusContent(filter, ServiceParamDictionary);
                 }
 
                 return content;
@@ -166,14 +171,21 @@ namespace PromDapterSvc.Controllers
             _logger?.Log(LogLevel.Information, "Cache Initialized");
         }
 
-        private async Task<ContentResult> getPrometheusContent(string filter)
+        private async Task<ContentResult> getPrometheusContent(string filter, Dictionary<string, object> paramDictionary)
         {
             ContentResult content;
             var processor = ServiceProcessor.DataItemRegexPrometheusProcessor;
             {
                 var dump = new HWiNFOProvider();
+                var dump2 = new WMIProvider();
             }
-            var processingTasks = Services.Select(item => processor(item, null));
+            var processingTasks = Services.Select(item =>
+            {
+                string typeName = item.GetType().Name;
+                object parameters = null;
+                paramDictionary.TryGetValue(typeName, out parameters);
+                return processor(item, parameters);
+            });
             await Task.WhenAll(processingTasks);
             var processingResults = processingTasks.Select(item => item.Result).ToArray();
 
