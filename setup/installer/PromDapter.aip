@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="16.9" version="17.7" Modules="professional" RootPath="." Language="en" Id="{C0A14010-E18E-4DA8-BB58-41E67E6766B5}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="16.9" version="17.9" Modules="professional" RootPath="." Language="en" Id="{C0A14010-E18E-4DA8-BB58-41E67E6766B5}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="AI_FINDEXE_TITLE" Value="Select the installation package for [|ProductName]" ValueLocId="AI.Property.FindExeTitle"/>
@@ -14,10 +14,10 @@
     <ROW Property="ARPURLINFOABOUT" Value="https://github.com/kallex/PromDapter/issues"/>
     <ROW Property="CTRLS" Value="1"/>
     <ROW Property="Manufacturer" Value="ProtonIT Oy"/>
-    <ROW Property="ProductCode" Value="1033:{54D797AC-0D19-456D-91E5-95EA95BE9584} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{230A9B66-378E-4B59-A593-E9CDA47B4EC1} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="PromDapter"/>
-    <ROW Property="ProductVersion" Value="0.9.17" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.18" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{9561E320-7E1E-4A89-BA83-A480C957B61C}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -36,7 +36,7 @@
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="AI_CustomARPName" ComponentId="{293E0A8D-220B-45A5-93A6-997FE2C40216}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{02EA3051-65CB-4A84-BE2C-B252B17F7913}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_DisableModify" ComponentId="{0D376B12-A3DE-41B3-9699-46F4CC709566}" Directory_="APPDIR" Attributes="260" KeyPath="NoModify" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{7CB6BE3A-A5FB-4DF8-A107-91FB512EE48D}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{1815A4F5-9AEC-4539-B602-83A77D0B372B}" Directory_="APPDIR" Attributes="0"/>
