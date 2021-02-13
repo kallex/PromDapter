@@ -152,7 +152,11 @@ namespace PromDapterSvc.Controllers
                     item.Contains(filter, StringComparison.InvariantCultureIgnoreCase));
             }
 
-            var textContent = String.Join("\n", combinedResults);
+            const string ProperLineEnd = "\n";
+
+            var textContent = String.Join(ProperLineEnd, combinedResults);
+            if (!textContent.EndsWith(ProperLineEnd))
+                textContent += ProperLineEnd;
             content = Content(textContent);
             return content;
         }
