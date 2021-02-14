@@ -53,7 +53,7 @@
     <ROW File="appsettings.json" Component_="appsettings.json" FileName="APPSET~2.JSO|appsettings.json" Attributes="0" SourcePath="..\publish\appsettings.json" SelfReg="false"/>
     <ROW File="PromDapterSvc.exe" Component_="PromDapterSvc.exe" FileName="PROMDA~1.EXE|PromDapterSvc.exe" Attributes="0" SourcePath="..\publish\PromDapterSvc.exe" SelfReg="false" DigSign="true"/>
     <ROW File="Prometheusmapping.yaml_1" Component_="Prometheusmapping.yaml" FileName="PROMET~1.YAM|Prometheusmapping.yaml" Attributes="0" SourcePath="..\..\src\PromDapterSvc\Prometheusmapping.yaml" SelfReg="false"/>
-    <ROW File="Prometheusmapping.yaml" Component_="appsettings.json" FileName="PROMET~1.YAM|Prometheusmapping.yaml" Attributes="0" SourcePath="..\..\src\PromDapterSvc\Prometheusmapping.yaml" SelfReg="false"/>
+    <ROW File="Prometheusmapping.yaml" Component_="appsettings.json" FileName="PROMET~1.YAM|Prometheusmapping.yaml" Attributes="0" SourcePath="..\publish\Prometheusmapping.yaml" SelfReg="false"/>
     <ROW File="README.txt" Component_="appsettings.json" FileName="README.txt" Attributes="0" SourcePath="..\..\docs\README.txt" SelfReg="false"/>
     <ROW File="HWiNFOHomeCluster.json" Component_="appsettings.json" FileName="HWINFO~1.JSO|HWiNFO Home Cluster.json" Attributes="0" SourcePath="..\..\src\Grafana\Dashboards\HWiNFO Home Cluster.json" SelfReg="false"/>
   </COMPONENT>
