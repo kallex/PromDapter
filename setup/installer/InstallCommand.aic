@@ -1,0 +1,4 @@
+;aic
+SetAzureKeyVaultSecret %env.AzureKeyVaultSecret%
+Save
+Rebuild
