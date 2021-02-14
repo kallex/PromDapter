@@ -1,4 +1,4 @@
 ;aic
-SetAzureKeyVaultSecret %env.AzureKeyVaultSecret%
+SetAzureKeyVaultSecret AzureKeyVaultSecret -secret_is_env_var_name
 Save
 Rebuild
