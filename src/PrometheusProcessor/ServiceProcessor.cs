@@ -20,6 +20,8 @@ namespace PrometheusProcessor
     public class ServiceProcessor
     {
         public delegate Task<(string mimeType, object data)> Processor(IPromDapterService service, object parameters);
+
+        private string CurrentHostName = Environment.MachineName;
         public ServiceProcessor()
         {
 
@@ -71,7 +73,9 @@ namespace PrometheusProcessor
                 var degreeOfParallelism = (int) Math.Ceiling(itemCount / MinimumAmountPerCore);
                 if (Debugger.IsAttached)
                     degreeOfParallelism = 1;
-                var parallelBag = new ConcurrentBag<(string helpString, string typeString, string[] metricLines)>();
+                var parallelBag = new ConcurrentBag<(string helpKey, string typeString, string[] metricLines)>();
+                // Dicting helpDict to avoid errors on multiple helps
+                var helpDict = new ConcurrentDictionary<string, string>();
 
                 Parallel.ForEach(dataItems, new ParallelOptions()
                     {
@@ -103,6 +107,7 @@ namespace PrometheusProcessor
                         metadataDict.Add("sensor_type", sensorType);
                         metadataDict.Add("sensor", sensorName);
                         metadataDict.Add("source", sourceName);
+                        metadataDict.Add("host", CurrentHostName);
 
                         // Move Entity name as prefix for MetricName
                         if (metadataDict.ContainsKey("Entity"))
@@ -117,7 +122,11 @@ namespace PrometheusProcessor
                         }
 
                         var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
-                        var helpString = $"# HELP {finalMetricName} {metricName.Replace("_", " ")} - {sourceName}";
+                        var helpKey = $"# HELP {finalMetricName}";
+                        var helpString = $"{helpKey} {metricName.Replace("_", " ")} - {sourceName}";
+                        var multipleSourceHelpString = $"{helpKey} {metricName.Replace("_", " ")} - (multiple sources)";
+                        // If already exists with different name, add multiple sources name
+                        helpDict.AddOrUpdate(helpKey, helpString, (key, oldValue) => helpString == oldValue ? oldValue : multipleSourceHelpString);
                         var metricType = getMetrictType(unit);
                         string typeString = null;
                         if (metricType != null)
@@ -131,13 +140,13 @@ namespace PrometheusProcessor
                         var categoryString = String.Join(",", categoryParts);
                         var promStr =
                             $"{finalMetricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
-                        parallelBag.Add((helpString, typeString, new[] {promStr}));
+                        parallelBag.Add((helpKey, typeString, new[] {promStr}));
                     });
                 var grouped = parallelBag
-                    .OrderBy(item => item.helpString).ThenBy(item => item.typeString)
-                    .GroupBy(item => (item.helpString, item.typeString));
+                    .OrderBy(item => helpDict[item.helpKey]).ThenBy(item => item.typeString)
+                    .GroupBy(item => (helpDict[item.helpKey], item.typeString));
                 var lineResult = grouped
-                    .SelectMany(grp => new[] {grp.Key.helpString, grp.Key.typeString}
+                    .SelectMany(grp => new[] {grp.Key.Item1, grp.Key.typeString}
                         .Concat(grp.SelectMany(item => item.metricLines).OrderBy(item => item))
                         .Where(item => !String.IsNullOrEmpty(item))).ToArray();
                 var result = String.Join(Environment.NewLine, lineResult);

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
@@ -58,6 +59,39 @@ namespace PromDapterTests
                 result = await processor(service, null);
             }
 
+            var textDump = result.data?.ToString();
+            var metricDump = String.Join(Environment.NewLine, textDump);
+        }
+
+        [Fact]
+        public async Task ServiceProcessorMemoryLeakTestHWInfo()
+        {
+            (string mimeType, object data) result = (null, null);
+            for (int i = 0; i < 10000; i++)
+            {
+                var serviceProcessor = new ServiceProcessor();
+                serviceProcessor.InitializeProcessors();
+                var processor = serviceProcessor.DataItemRegexPrometheusProcessor;
+                var service = new HWiNFOProvider();
+                result = await processor(service, null);
+                Debug.WriteLine($"Current loop: {i}");
+            }
+            var textDump = result.data?.ToString();
+            var metricDump = String.Join(Environment.NewLine, textDump);
+        }
+
+        [Fact]
+        public async Task ServiceProcessorMemoryLeakTestHWInfoRaw()
+        {
+            (string mimeType, object data) result = (null, null);
+            for (int i = 0; i < 100000; i++)
+            {
+                var provider = new HWiNFOProvider();
+                await provider.Open();
+                await provider.GetDataItems();
+                await provider.Close();
+                Debug.WriteLine($"Current loop: {i}");
+            }
             var textDump = result.data?.ToString();
             var metricDump = String.Join(Environment.NewLine, textDump);
         }
