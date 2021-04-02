@@ -9,9 +9,9 @@
     <EazfuscatorCompatibilityVersion>2020.1</EazfuscatorCompatibilityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HWiNFODataProvider" Version="2021.214.19" />
+    <PackageReference Include="HWiNFODataProvider" Version="2021.402.23" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="3.1.3" />
-    <PackageReference Include="PromDapterDeclarations" Version="2021.214.19" />
+    <PackageReference Include="PromDapterDeclarations" Version="2021.402.23" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PrometheusProcessor\PrometheusProcessor.csproj" />
