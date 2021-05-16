@@ -20,39 +20,49 @@ namespace SensorMonHTTP
         public GetDataItems GetDataItems { get; }
         public Close Close { get; }
 
-        private async Task<DataItem[]> GetDataItemsAsync(object[] itemNameAndIdentifiers)
+        private async Task<DataItem[]> GetDataItemsAsync(object[] itemNameAndIdentifierTuples)
         {
+            var itemNamesAndIdentifiers = itemNameAndIdentifierTuples.Cast<(string itemName, string[] identifiers)>().ToArray();
             const string defaultIdentifierName = "Name";
             var result = new List<DataItem>();
 
-            var itemName = itemNameAndIdentifiers.First().ToString();
-            var identifierNames = (string[]) itemNameAndIdentifiers.Skip(1).FirstOrDefault();
-            if (identifierNames?.Any() != true)
-                identifierNames = new[] { defaultIdentifierName };
-
-            var queryText = $"SELECT * FROM {itemName}";
-            using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
-            using (var mosResult = managementObjectSearcher.Get())
+            foreach (var itemNameAndIdentifier in itemNamesAndIdentifiers)
             {
-				foreach (var managementBaseObject in mosResult)
+                var itemName = itemNameAndIdentifier.itemName;
+                var identifierNames = itemNameAndIdentifier.identifiers;
+                if (identifierNames?.Any() != true)
+                    identifierNames = new[] {defaultIdentifierName};
+
+                var queryText = $"SELECT * FROM {itemName}";
+                using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
+                using (var mosResult = managementObjectSearcher.Get())
                 {
-                    Source source = new Source();
-                    var identifierProps = managementBaseObject.Properties
-                        .Cast<PropertyData>()
-                        .Where(pd => identifierNames.Contains(pd.Name))
-                        .OrderBy(pd => Array.IndexOf(identifierNames, pd.Name)).ToArray();
-                    source.SourceName = itemName;
-                    var categoryValues = identifierProps.ToDictionary(pd => pd.Name, pd => new[] {new DataValue() { Object = pd.Value, Type = pd.Value?.GetType() ?? typeof(object)}});
-                    var dataItems = getDataItems(managementBaseObject, source).ToArray();
-                    foreach (var item in dataItems)
+                    foreach (var managementBaseObject in mosResult)
                     {
-                        item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
-                        //item.CategoryValues.Add("MetricName",
-                        //    new[] {new DataValue() {Object = item.Name, Type = item.Name?.GetType()}});
+                        Source source = new Source();
+                        var identifierProps = managementBaseObject.Properties
+                            .Cast<PropertyData>()
+                            .Where(pd => identifierNames.Contains(pd.Name))
+                            .OrderBy(pd => Array.IndexOf(identifierNames, pd.Name)).ToArray();
+                        source.SourceName = itemName;
+                        var categoryValues = identifierProps.ToDictionary(pd => pd.Name,
+                            pd => new[]
+                            {
+                                new DataValue() {Object = pd.Value, Type = pd.Value?.GetType() ?? typeof(object)}
+                            });
+                        var dataItems = getDataItems(managementBaseObject, source).ToArray();
+                        foreach (var item in dataItems)
+                        {
+                            item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
+                            //item.CategoryValues.Add("MetricName",
+                            //    new[] {new DataValue() {Object = item.Name, Type = item.Name?.GetType()}});
+                        }
+
+                        result.AddRange(dataItems);
                     }
-                    result.AddRange(dataItems);
                 }
             }
+
             return result.ToArray();
         }
 

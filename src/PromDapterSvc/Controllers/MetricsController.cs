@@ -63,10 +63,24 @@ namespace PromDapterSvc.Controllers
         const string JsonFilterName = "json";
 
 
-        private static Dictionary<string, object> ServiceParamDictionary = new Dictionary<string, object>()
+        static MetricsController()
         {
-            {nameof(WMIProvider), new object[] {"Win32_LogicalDisk"}}
-        };
+            var wmiProviderParams = new (string itemName, string[] identifiers)[]
+            {
+                ("Win32_LogicalDisk", null),
+                ("Win32_Process", new []{ "ProcessId"}),
+                ("Win32_DesktopMonitor ", null)
+            };
+
+            ServiceParamDictionary = new Dictionary<string, object>()
+            {
+                {
+                    nameof(WMIProvider), wmiProviderParams.Cast<object>().ToArray()
+                }
+            };
+        }
+
+        private static Dictionary<string, object> ServiceParamDictionary;
 
         [HttpGet]
         [Route("")]

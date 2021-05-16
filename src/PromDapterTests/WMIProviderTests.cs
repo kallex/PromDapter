@@ -22,6 +22,13 @@ namespace SensorMonHTTP.Tests
             Assert.True(dataItems.Any());
         }
 
+        [Fact()]
+        public async Task WMIProviderTest_Win32_DesktopMonitor() // Win32_DesktopMonitor
+        {
+            var dataItems = await getWMIDataFromMethodName();
+
+            Assert.True(dataItems.Any());
+        }
 
         [Fact()]
         public async Task WMIProviderTest_Win32_Process()
@@ -72,7 +79,8 @@ namespace SensorMonHTTP.Tests
             var provider = new WMIProvider();
             await provider.Open();
 
-            var dataItems = await provider.GetDataItems(new object[] { wmiClassName, identifierNames });
+            var wmiParameters = (itemName: wmiClassName, identifierNames: identifierNames);
+            var dataItems = await provider.GetDataItems(new object[] { wmiParameters });
             dataItems = dataItems.OrderBy(item => item.Source.SourceName).ThenBy(item => item.Name).ToArray();
 
             await provider.Close();
