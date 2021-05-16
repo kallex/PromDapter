@@ -40,6 +40,8 @@ mapping:
     - '(?<Entity>Drive) (Airflow )*(?<MetricName>Temperature 2|Temperature|Remaining Life|Failure|Warning)'
 # Drive
     - '(?<Entity_Drive>)(?<MetricName>Read Activity|Write Activity|Total Activity|Read Rate|Write Rate)'
+# UPS
+    - '(?<Entity_UPS>)(?<MetricName>UPS Load|Input Voltage|Output Voltage|Charge Level|Estimated Runtime|AC Power|Charging|Discharging)'
   - name: AggregateValues
     patterns:
     - '(?<AggregationType>Average) (?<MetricName>(Effective Clock))'
