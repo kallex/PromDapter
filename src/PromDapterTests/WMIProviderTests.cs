@@ -31,12 +31,38 @@ namespace SensorMonHTTP.Tests
         }
 
         [Fact()]
-        public async Task WMIProviderTest_Win32_Process()
+        public async Task WMIProviderTest_Win32_Process__Name_ProcessId()
         {
-            var dataItems = await getWMIDataFromMethodName("Name", "ProcessId");
+            var dataItems = await getWMIDataFromMethodName();
+            dataItems = dataItems.OrderBy(item => item.CategoryValues["ProcessId"].First().Object?.ToString())
+                .ThenBy(item => item.CategoryValues["Name"].First().Object.ToString()).ToArray();
 
             Assert.True(dataItems.Any());
         }
+
+
+        [Fact()]
+        public async Task WMIProviderTest_Win32_Process__Name_ProcessId__WorkingSetSize()
+        {
+            //var dataItems = await getWMIDataFromMethodName(new[] {"Name", "ProcessId"});
+            //var dataItems = await getWMIDataFromMethodName(new[] {"Name", "ProcessId"}, new [] { "WorkingSetSize"});
+            var dataItems = await getWMIDataFromMethodName();
+            dataItems = dataItems.OrderBy(item => item.CategoryValues["ProcessId"].First().Object?.ToString())
+                .ThenBy(item => item.CategoryValues["Name"].First().Object.ToString()).ToArray();
+
+            Assert.True(dataItems.Any());
+        }
+
+        [Fact()]
+        public async Task WMIProviderTest_Win32_PerfFormattedData_PerfProc_Process__Name__PercentProcessorTime()
+        {
+            var dataItems = await getWMIDataFromMethodName();
+            dataItems = dataItems.OrderBy(item => item.CategoryValues["Name"].First().Object?.ToString()).ToArray();
+
+            Assert.True(dataItems.Any());
+        }
+
+
 
         [Fact()]
         public async Task WMIProviderTest_Win32_NetworkAdapter()
@@ -49,16 +75,18 @@ namespace SensorMonHTTP.Tests
         [Fact()]
         public async Task WMIProviderTest_Win32_NetworkAdapterConfiguration()
         {
-            var dataItems = await getWMIDataFromMethodName("Caption");
+            var dataItems = await getWMIDataFromMethodName(new []{"Caption"});
 
             Assert.True(dataItems.Any());
         }
 
 
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task<DataItem[]> getWMIDataFromMethodName(params string[] identifierNames)
+        private static async Task<DataItem[]> getWMIDataFromMethodName(string[] identifierNames = null, string[] propertyFilter = null)
         {
+            const string partSeparator = "__";
+            const string arraySeparator = "_";
+
             const string testMethodNamePrefix = "WMIProviderTest_";
             var stack = new StackTrace();
             var frames = stack.GetFrames();
@@ -69,17 +97,34 @@ namespace SensorMonHTTP.Tests
                 throw new InvalidOperationException("No test method found in callstack");
             if(!callingMethodName.StartsWith(testMethodNamePrefix))
                 throw new InvalidDataException($"Not supported format in test method name {callingMethodName} missing prefix {testMethodNamePrefix}");
-            var wmiClassName = callingMethodName.Replace(testMethodNamePrefix, "");
-            var result = await getWMIDataItems(wmiClassName, identifierNames);
+
+
+            var methodName = callingMethodName.Replace(testMethodNamePrefix, "");
+            var parameterParts = methodName.Split(partSeparator);
+
+            var wmiClassName = parameterParts.FirstOrDefault();
+            if (identifierNames == null)
+            {
+                var identifierPart = parameterParts.Skip(1).FirstOrDefault();
+                identifierNames = identifierPart?.Split(arraySeparator);
+            }
+
+            if (propertyFilter == null)
+            {
+                var propertyFilterPart = parameterParts.Skip(2).FirstOrDefault();
+                propertyFilter = propertyFilterPart?.Split(arraySeparator);
+            }
+
+            var result = await getWMIDataItems(wmiClassName, identifierNames, propertyFilter);
             return result;
         }
 
-        private static async Task<DataItem[]> getWMIDataItems(string wmiClassName, string[] identifierNames)
+        private static async Task<DataItem[]> getWMIDataItems(string wmiClassName, string[] identifierNames, string[] propertyFilter)
         {
             var provider = new WMIProvider();
             await provider.Open();
 
-            var wmiParameters = (itemName: wmiClassName, identifierNames: identifierNames);
+            var wmiParameters = (itemName: wmiClassName, identifierNames: identifierNames, propertyFilter: propertyFilter);
             var dataItems = await provider.GetDataItems(new object[] { wmiParameters });
             dataItems = dataItems.OrderBy(item => item.Source.SourceName).ThenBy(item => item.Name).ToArray();
 

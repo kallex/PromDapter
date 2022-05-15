@@ -20,20 +20,26 @@ namespace SensorMonHTTP
         public GetDataItems GetDataItems { get; }
         public Close Close { get; }
 
-        private async Task<DataItem[]> GetDataItemsAsync(object[] itemNameAndIdentifierTuples)
+        private async Task<DataItem[]> GetDataItemsAsync(object[] parameterTuples)
         {
-            var itemNamesAndIdentifiers = itemNameAndIdentifierTuples.Cast<(string itemName, string[] identifiers)>().ToArray();
+            var parameters = parameterTuples.Cast<(string itemName, string[] identifiers, string[] propertyFilter)>().ToArray();
             const string defaultIdentifierName = "Name";
             var result = new List<DataItem>();
 
-            foreach (var itemNameAndIdentifier in itemNamesAndIdentifiers)
+            foreach (var parameter in parameters)
             {
-                var itemName = itemNameAndIdentifier.itemName;
-                var identifierNames = itemNameAndIdentifier.identifiers;
+                var itemName = parameter.itemName;
+                var identifierNames = parameter.identifiers;
+                var propertyFilter = parameter.propertyFilter ?? new string[0];
+
                 if (identifierNames?.Any() != true)
                     identifierNames = new[] {defaultIdentifierName};
 
-                var queryText = $"SELECT * FROM {itemName}";
+                string selectPart = "*";
+                if (propertyFilter.Any())
+                    selectPart = String.Join(", ", identifierNames.Concat(propertyFilter));
+
+                var queryText = $"SELECT {selectPart} FROM {itemName}";
                 using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
                 using (var mosResult = managementObjectSearcher.Get())
                 {
@@ -53,7 +59,8 @@ namespace SensorMonHTTP
                         var dataItems = getDataItems(managementBaseObject, source).ToArray();
                         foreach (var item in dataItems)
                         {
-                            item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
+                            item.CategoryValues = categoryValues;
+                            //item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
                             //item.CategoryValues.Add("MetricName",
                             //    new[] {new DataValue() {Object = item.Name, Type = item.Name?.GetType()}});
                         }
