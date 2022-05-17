@@ -15,7 +15,7 @@ namespace SensorMonHTTP.Tests
     public class WMIProviderTests
     {
         [Fact()]
-        public async Task WMIProviderTest_Win32_LogicalDisk()
+        public async Task WMIProviderTest_Win32_LogicalDisk__DeviceID__Size_FreeSpace()
         {
             var dataItems = await getWMIDataFromMethodName();
 

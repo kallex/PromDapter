@@ -1,21 +1,21 @@
-﻿# Initial 0.7 mapping model
+﻿# Initial 0.8 mapping model
 metadata:
   description: HWiNFO to Prometheus Metric Mapping data
 
 mapping:
   - name: IndividualValues
     patterns: 
-# System/Memory
+    # System/Memory
     - '(?<MetricCategory>[^ ]+) (?<Entity>Memory) (?<MetricName>Commited|Used|Available|Load)'
     - '(?<Entity_Memory>)(?<MetricName>Page File Usage)'
-# Cores
+    # Cores
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>VID|Clock|Ratio)'
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricCategory>[^ ]+) (?<MetricName>(Effective Clock|Usage|Residency))'
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<State>[^ ]+) (?<MetricName>Residency)'
-# Memory Timings
+    # Memory Timings
     - '(?<Entity>Memory) (?<MetricName>Clock Ratio|Clock)'
     - '(?<Entity_Memory>)(?<MetricName>Tcas|Trcd|Trp|Tras|Trc|Trfc|Command Rate)'
-# CPU / Package    
+    # CPU / Package    
     - '(?<Entity_CPU>)(?<MetricCategory>Package) (?<State>[^ ]+) (?<MetricName>Residency)'
     - '(?<Entity>CPU) \((?<MetricName>(Tctl/Tdie|average|PPT))\)'
     - '(?<Entity>CPU) (?<MetricCategory>[^ ]+) \((?<MetricName>(Tdie))\)'
@@ -24,29 +24,51 @@ mapping:
     - '(?<Entity>CPU) (?<MetricName>Package Power|Core Power|SoC Power) \((?<MetricCategory>[^)]+)\)'
     - '(?<Entity_CPU>)(?<MetricName>Core\+SoC Power) \((?<MetricCategory>[^)]+)\)'
     - '(?<Entity>Core) (?<CoreNo>\d+) (?<MetricName>Power) \((?<MetricCategory>[^)]+)\)'
-# CPU Infra
+    # CPU Infra
     - '(?<Entity>Bus) (?<MetricName>Clock)'
     - '(?<Entity>Infinity Fabric|Memory Controller) (?<MetricName>Clock)[ ]*\((?<MetricCategory>[^)]+)\)'
     - '(?<Entity_CPU>)(?<MetricName>Thermal Throttling)[ ]*\((?<MetricCategory>[^)]+)\)'
-# GPU
+    # GPU
     - '(?<Entity>GPU) (?<MetricName>Temperature|Core Voltage|Fan|Power|Clock|Memory Clock|Video Clock|Core Load|Memory Controller Load|Video Engine Load|Bus Load|Memory Usage|D3D Usage|VR Usage)'
     - '(?<Entity>GPU) (?<MetricName>Memory Allocated|D3D Memory Dedicated|D3D Memory Dynamic)'
     - '(?<Entity_GPU>)(?<MetricName>PCIe Link Speed)'
     - '(?<Entity_GPU>)(?<MetricName>Performance Limit) - (?<MetricCategoy>Power|Thermal|Reliability Voltage|Max Operating Voltage|Utilization|SLI GPUBoost Sync)'
     - 'Total (?<Entity>GPU) (?<MetricName>Power) (?<MetricCategory>.*)'
-# Network
-    - '(?<Entity_Network>)Current (?<MetricName>DL rate|UL rate)'
-# S.M.A.R.T.
+    # PSU
+    - '(?<Entity>PSU) (?<MetricName>Temperature2|Temperature|Fan|Power \(sum\)|Power|Efficiency)'
+    # Network
+    - '(?<Entity_Network>)Current (?<MetricName>DL rate|UP rate)'
+    # S.M.A.R.T.
     - '(?<Entity>Drive) (Airflow )*(?<MetricName>Temperature 2|Temperature|Remaining Life|Failure|Warning)'
-# Drive
+    # Drive
     - '(?<Entity_Drive>)(?<MetricName>Read Activity|Write Activity|Total Activity|Read Rate|Write Rate)'
-# UPS
+    # UPS
     - '(?<Entity_UPS>)(?<MetricName>UPS Load|Input Voltage|Output Voltage|Charge Level|Estimated Runtime|AC Power|Charging|Discharging)'
+    # Test additions
+    - '(?<Entity>Core) (?<CoreNo>\d+)'
+    - '(?<Entity>CPU) (?<MetricName>Package Power|Package|IA Cores|GT Cores \(Graphics\))'
+    #    - '(?<Entity>CPU) (?<MetricName>Package|IA Cores|GT Cores \(Graphics\))'
+    - '(?<Entity_MB>)(?<MetricName>(SYSTIN|System|Auxtin \d|CPU \(PECI\)|\+3\.3V|\+5V|\+12V|Chipset))'
   - name: AggregateValues
     patterns:
     - '(?<AggregationType>Average) (?<MetricName>(Effective Clock))'
     - '(?<AggregationType>Max) (?<MetricCategory>.*) (?<MetricName>(Usage))'
     - '(?<AggregationType>Total) (?<MetricCategory>.*) (?<MetricName>(Usage))'
-    - '(?<Entity_Network>)(?<AggregationType>Total) (?<MetricName>DL|UL)'
+    #    - '(?<Entity_Network>)(?<AggregationType>Total) (?<MetricName>DL|UP)' # Total only over monitoring session time, since start of HWiNFO
     - '(?<Entity_Drive>)(?<AggregationType>Total) (?<MetricName>Host Writes|Host Reads)'
-#    - '(?<Entity_Drive>)(?<MetricName>Read|Write) (?<AggregationType>Total)' # Total only over monitoring session time, since start of HWiNFO
+    #    - '(?<Entity_Drive>)(?<MetricName>Read|Write) (?<AggregationType>Total)' # Total only over monitoring session time, since start of HWiNFO
+
+wmiservice:
+  - source: Win32_Process
+    ids:
+    - Name
+    - ProcessId
+  - source: Win32_LogicalDisk
+    name: Disk
+    ids:
+    - DeviceID
+    values:
+    - name: Size
+      unit: Byte
+    - name: FreeSpace
+      unit: Byte

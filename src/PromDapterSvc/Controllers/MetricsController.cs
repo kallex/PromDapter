@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime;
@@ -53,7 +54,9 @@ namespace PromDapterSvc.Controllers
             ServiceProcessor = serviceProcessor;
             var services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
             Services = services;
-            await serviceProcessor.InitializeServices(services);
+            var configFile = GetConfigFilename();
+
+            await serviceProcessor.InitializeServices(services, configFile);
             //serviceProcessor.CurrentProcessor = ServiceProcessor.DataItemRegexProcessor;
             _logger?.Log(LogLevel.Information, "Cache Initialized");
         }
@@ -266,6 +269,16 @@ namespace PromDapterSvc.Controllers
             content = Content(textContent);
             return content;
         }
+
+        public static string GetConfigFilename()
+        {
+            //var yamlContent = await File.ReadAllTextAsync();
+            var fileName = "Prometheusmapping.yaml";
+            var commonAppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var commonFilePath = Path.Combine(commonAppDataFolder, "PromDapter", fileName);
+            return commonFilePath;
+        }
+
 
     }
 }

@@ -22,21 +22,13 @@ namespace PrometheusProcessor
 
         public Regex[] AllRegexes = new Regex[0];
 
-        public YamlRegexMapData()
+        private YamlRegexMapData()
         {
-            InitializeRegexDict();
+
         }
 
-        public void InitializeRegexDict()
+        public static YamlRegexMapData InitializeFromFile(string fileName)
         {
-            //var yamlContent = await File.ReadAllTextAsync();
-            var fileName = "Prometheusmapping.yaml";
-            var commonAppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            var commonFilePath = Path.Combine(commonAppDataFolder, "PromDapter", fileName);
-            if (File.Exists(commonFilePath) && !Debugger.IsAttached)
-            {
-                fileName = commonFilePath;
-            }
             object obj = null;
             using (var textStream = File.OpenText(fileName))
             {
@@ -79,8 +71,11 @@ namespace PrometheusProcessor
                 //Debug.WriteLine($"Pattern(s):");
                 //Debug.WriteLine(String.Join(Environment.NewLine, patterns));
             }
-            MetricTypeRegexDict = metricTypeDict;
-            AllRegexes = allRegexes.ToArray();
+
+            var result = new YamlRegexMapData();
+            result.MetricTypeRegexDict = metricTypeDict;
+            result.AllRegexes = allRegexes.ToArray();
+            return result;
         }
 
         public (Regex MatchingRegex, Dictionary<string, string> MetadataDictionary) GetSensorMetadata(string sensorName)
