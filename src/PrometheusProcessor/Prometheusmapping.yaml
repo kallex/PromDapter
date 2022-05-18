@@ -58,7 +58,8 @@ mapping:
     - '(?<Entity_Drive>)(?<AggregationType>Total) (?<MetricName>Host Writes|Host Reads)'
     #    - '(?<Entity_Drive>)(?<MetricName>Read|Write) (?<AggregationType>Total)' # Total only over monitoring session time, since start of HWiNFO
 
-wmiservice:
+wmiService:
+  sources:
   - source: Win32_Process
     ids:
     - Name

@@ -5,7 +5,9 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using SharpYaml.Serialization;
+using YamlDotNet.Serialization;
+using CamelCaseNamingConvention = YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention;
+using Serializer = YamlDotNet.Serialization.Serializer;
 
 namespace PrometheusProcessor
 {
@@ -17,32 +19,13 @@ namespace PrometheusProcessor
 
         public static YamlWMIProviderData InitializeFromFile(string fileName)
         {
-            object obj = null;
-            using (var textStream = File.OpenText(fileName))
-            {
-                var serializer = new Serializer(new SerializerSettings());
-                obj = serializer.Deserialize<ExpandoObject>(textStream);
-            }
 
-            dynamic dyn = obj;
-
-            var metricTypeDict = new Dictionary<string, Regex[]>();
-            List<Regex> allRegexes = new List<Regex>();
-            foreach (var wmiSource in dyn.wmiservice)
-            {
-                string source = wmiSource["source"];
-                string[] ids = ((List<object>)wmiSource["ids"]).Cast<string>().ToArray();
-                //string name = wmiSource["name"];
-                string name = PropertyExists(wmiSource, "name") ? wmiSource["name"] : null;
-
-                var values = PropertyExists(wmiSource, "values") ? ((List<object>)wmiSource["values"]) : null;
-
-                //(string name, string unit)[] values = ((List<object>)wmiSource["values"])
-
-                //Debug.WriteLine($"Name: {name}");
-                //Debug.WriteLine($"Pattern(s):");
-                //Debug.WriteLine(String.Join(Environment.NewLine, patterns));
-            }
+            using var textStream = File.OpenText(fileName);
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
+                .Build();
+            var rootObject = deserializer.Deserialize<RootYaml>(textStream);
 
             var result = new YamlWMIProviderData();
             return result;
@@ -80,5 +63,34 @@ wmiservice:
             return obj.GetType().GetProperty(name) != null;
         }
 
+        public class RootYaml
+        {
+            [YamlMember(typeof(WMIService), Alias = "wmiService")]
+            public WMIService WMIService { get; set; }
+        }
+
+        [DebuggerDisplay("{Sources}")]
+        public class WMIService
+        {
+            public List<WMISource> Sources { get; set; }
+        }
+
+        [DebuggerDisplay("{Source} ({Name})")]
+        public class WMISource
+        {
+            public string Source { get; set; }
+            public string Name { get; set; }
+            [YamlMember(typeof(List<string>), Alias = "ids")]
+            public List<string> IDs { get; set; }
+
+            public List<ValueItem> Values { get; set; }
+        }
+
+        [DebuggerDisplay("{Name} ({Unit})")]
+        public class ValueItem
+        {
+            public string Name { get; set; }
+            public string Unit { get; set; }
+        }
     }
 }
