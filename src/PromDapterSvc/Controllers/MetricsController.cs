@@ -68,17 +68,15 @@ namespace PromDapterSvc.Controllers
 
         static MetricsController()
         {
-            var wmiProviderParams = new (string itemName, string[] identifiers)[]
-            {
-                ("Win32_LogicalDisk", null),
-                ("Win32_Process", new []{ "ProcessId"}),
-                ("Win32_DesktopMonitor ", null)
-            };
+            var configFilename = GetConfigFilename();
+            var wmiData = YamlWMIProviderData.InitializeFromFile(configFilename);
+            var providerParams = YamlWMIProviderData.GetWMIParameters(wmiData.WMIServiceData);
+
 
             ServiceParamDictionary = new Dictionary<string, object>()
             {
                 {
-                    nameof(WMIProvider), wmiProviderParams.Cast<object>().ToArray()
+                    nameof(WMIProvider), providerParams.Cast<object>().ToArray()
                 }
             };
         }

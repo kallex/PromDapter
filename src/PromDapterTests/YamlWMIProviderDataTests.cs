@@ -9,6 +9,7 @@ namespace PrometheusProcessor.Tests
         {
             var configFile = Tests.GetConfigFilename();
             var providerData = YamlWMIProviderData.InitializeFromFile(configFile);
+            Assert.Equal(2, providerData.WMIServiceData.Sources.Count);
         }
     }
 }

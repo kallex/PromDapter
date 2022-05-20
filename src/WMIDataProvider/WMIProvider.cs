@@ -22,7 +22,7 @@ namespace SensorMonHTTP
 
         private async Task<DataItem[]> GetDataItemsAsync(object[] parameterTuples)
         {
-            var parameters = parameterTuples.Cast<(string itemName, string[] identifiers, string[] propertyFilter)>().ToArray();
+            var parameters = parameterTuples.Cast<(string itemName, string[] identifiers, (string name, string unit)[] propertyFilter)>().ToArray();
             const string defaultIdentifierName = "Name";
             var result = new List<DataItem>();
 
@@ -30,16 +30,22 @@ namespace SensorMonHTTP
             {
                 var itemName = parameter.itemName;
                 var identifierNames = parameter.identifiers;
-                var propertyFilter = parameter.propertyFilter ?? new string[0];
+                var propertyFilter = parameter.propertyFilter ?? new (string, string)[0];
 
                 if (identifierNames?.Any() != true)
                     identifierNames = new[] {defaultIdentifierName};
 
                 string selectPart = "*";
-                if (propertyFilter.Any())
-                    selectPart = String.Join(", ", identifierNames.Concat(propertyFilter));
+                var specifiedPropertyDict = new Dictionary<string, bool>();
+                var propertyNames = propertyFilter.Select(item => item.name).ToArray();
+                if (propertyNames.Any())
+                {
+                    selectPart = String.Join(", ", identifierNames.Concat(propertyNames).Distinct());
+                    specifiedPropertyDict = propertyNames.ToDictionary(item => item, item => true);
+                }
 
                 var queryText = $"SELECT {selectPart} FROM {itemName}";
+                var unitDict = propertyFilter.ToDictionary(item => item.name, item => item.unit);
                 using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
                 using (var mosResult = managementObjectSearcher.Get())
                 {
@@ -56,7 +62,7 @@ namespace SensorMonHTTP
                             {
                                 new DataValue() {Object = pd.Value, Type = pd.Value?.GetType() ?? typeof(object)}
                             });
-                        var dataItems = getDataItems(managementBaseObject, source).ToArray();
+                        var dataItems = getDataItems(managementBaseObject, source, unitDict, specifiedPropertyDict).ToArray();
                         foreach (var item in dataItems)
                         {
                             item.CategoryValues = categoryValues;
@@ -73,9 +79,11 @@ namespace SensorMonHTTP
             return result.ToArray();
         }
 
-        private IEnumerable<DataItem> getDataItems(ManagementBaseObject mObj, Source source)
+        private IEnumerable<DataItem> getDataItems(ManagementBaseObject mObj, Source source,
+            Dictionary<string, string> unitDict, Dictionary<string, bool> propertyDict)
         {
             var result = mObj.Properties.Cast<PropertyData>()
+                .Where(pd => propertyDict.Count == 0 || propertyDict.ContainsKey(pd.Name))
                 .Where(pd => pd.Value != null)
                 .Select(pd =>
             {
@@ -89,6 +97,8 @@ namespace SensorMonHTTP
                     },
                     Source = source
                 };
+                if(unitDict.ContainsKey(pd.Name))
+                    dataItem.Unit = unitDict[pd.Name];
                 return dataItem;
             });
             return result;

@@ -13,6 +13,8 @@ namespace PrometheusProcessor
 {
     public class YamlWMIProviderData
     {
+        public WMIService WMIServiceData { get; set; }
+
         private YamlWMIProviderData()
         {
         }
@@ -27,7 +29,18 @@ namespace PrometheusProcessor
                 .Build();
             var rootObject = deserializer.Deserialize<RootYaml>(textStream);
 
-            var result = new YamlWMIProviderData();
+            var result = new YamlWMIProviderData()
+            {
+                WMIServiceData = rootObject.WMIService
+            };
+            return result;
+        }
+
+        public static (string wmiClassName, string[] identifiers, (string property, string unit)[] propertyFilter)[] GetWMIParameters(
+            WMIService wmiService)
+        {
+            var result = wmiService.Sources.Select(item =>
+                (item.Source, item.IDs?.ToArray() ?? new string[0], (item.Values?.Select(val => (val.Name, val.Unit)).ToArray() ?? new (string, string)[0]))).ToArray();
             return result;
         }
 
