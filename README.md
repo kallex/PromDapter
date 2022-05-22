@@ -4,6 +4,9 @@ PromDapter = Prometheus Adapter
 Currently in Pre-Release/Beta stage
 - Lightly documented
 - Source available, but not completely buildable due to HWiNFO Provider being private NuGet for the time being
+- UPDATE ^: HWinFO Provider also now Open Sourced: https://github.com/kallex/PromDapterHWiNFO/
+
+
 
 Pre-requisites:
 - HWiNFO running with Shared Memory enabled and Sensor-mode (window) opened, can be hidden afterwards
