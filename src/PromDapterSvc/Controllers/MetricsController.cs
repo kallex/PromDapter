@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime;
@@ -29,14 +30,62 @@ namespace PromDapterSvc.Controllers
 
         private static ServiceProcessor ServiceProcessor = null;
         private static IPromDapterService[] Services = null;
-        private static string Prefix = null;
+        //private static string Prefix = null;
 
         private static SemaphoreSlim Semaphore = new SemaphoreSlim(1);
+
+        public async Task initServiceProcessor()
+        {
+            // TODO: Move WMI provider and providers in general to be dynamically addable
+            var configFilename = GetConfigFilename();
+            var wmiData = YamlWMIProviderData.InitializeFromFile(configFilename);
+            var providerParams = YamlWMIProviderData.GetWMIParameters(wmiData.WMIServiceData);
+
+            ServiceParamDictionary = new Dictionary<string, object>()
+            {
+                {
+                    nameof(WMIProvider), providerParams.Cast<object>().ToArray()
+                }
+            };
+
+            /*
+            var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
+            const string defaultPrefix = "hwi_";
+            string prefix;
+            if (String.IsNullOrEmpty(configuredPrefix))
+            {
+                _logger.LogWarning($"No prefix defined in configuration; defaulting to {defaultPrefix}");
+                prefix = defaultPrefix;
+            }
+            else
+                prefix = configuredPrefix;
+            */
+            var serviceProcessor = new ServiceProcessor();
+            //serviceProcessor.InitializeProcessors(prefix);
+            serviceProcessor.InitializeProcessors();
+            //Prefix = prefix;
+
+
+            ServiceProcessor = serviceProcessor;
+            var services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
+            Services = services;
+            var configFile = GetConfigFilename();
+
+            await serviceProcessor.InitializeServices(services, configFile);
+            //serviceProcessor.CurrentProcessor = ServiceProcessor.DataItemRegexProcessor;
+            _logger?.Log(LogLevel.Information, "Cache Initialized");
+        }
 
         const string DebugFilterName = "debugerror";
         const string ResetFilterName = "reset";
         const string JsonFilterName = "json";
 
+
+        static MetricsController()
+        {
+        }
+
+        private static Dictionary<string, object> ServiceParamDictionary;
 
         [HttpGet]
         [Route("")]
@@ -48,21 +97,47 @@ namespace PromDapterSvc.Controllers
                 return Content("Semaphore failed");
             try
             {
-                var prefix = Prefix;
+                //var prefix = Prefix;
+                var serviceProcessor = ServiceProcessor;
+                IPromDapterService[] services = Services;
                 bool isResetFilter = filter == ResetFilterName;
                 bool isJsonFilter = filter == JsonFilterName;
                 if (isResetFilter)
                 {
-                    Prefix = null;
+                    //Prefix = null;
                     ServiceProcessor = null;
                     _logger?.Log(LogLevel.Information, "Cache Reset");
                     return Content("Resetted");
                 }
 
                 if (ServiceProcessor == null)
+                    await initServiceProcessor();
+                
+
+                /*
+                var processor = serviceProcessor.DataItemRegexProcessor;
+                {
+                    var dump = new HWiNFOProvider();
+                }
+                */
+                //var processingTasks = services.Select(item => processor(item));
+                //await Task.WhenAll(processingTasks);
+                //IEnumerable<string> processingResult = processingTasks.SelectMany(item => item.Result);
+                //IEnumerable<string> processingResult = await serviceProcessor
+                //    .GetPrometheusData();
+                /*
+                if (filter != null && filter.ToLower() != DebugFilterName)
+                {
+                    processingResult = processingResult.Where(item =>
+                        item.Contains(filter, StringComparison.InvariantCultureIgnoreCase));
+                }
+                */
+                /*
+                if (ServiceProcessor == null)
                 {
                     await initServiceCache();
                 }
+                */
 
                 ContentResult content = null;
                 if (isJsonFilter)
@@ -71,7 +146,7 @@ namespace PromDapterSvc.Controllers
                 }
                 else
                 {
-                    content = await getPrometheusContent(filter);
+                    content = await getPrometheusContent(filter, ServiceParamDictionary);
                 }
 
                 return content;
@@ -79,7 +154,7 @@ namespace PromDapterSvc.Controllers
             catch (Exception ex)
             {
                 ServiceProcessor = null;
-                Prefix = null;
+                //Prefix = null;
                 _logger.LogCritical(ex, "Unhandled error");
                 if (filter == DebugFilterName)
                 {
@@ -94,6 +169,8 @@ namespace PromDapterSvc.Controllers
             }
         }
 
+
+        [Obsolete("Not used", true)]
         private async Task initServiceCache()
         {
             string prefix;
@@ -108,8 +185,9 @@ namespace PromDapterSvc.Controllers
                 prefix = configuredPrefix;
 
             var serviceProcessor = new ServiceProcessor();
-            serviceProcessor.InitializeProcessors(prefix);
-            Prefix = prefix;
+            //serviceProcessor.InitializeProcessors(prefix);
+            serviceProcessor.InitializeProcessors();
+            //Prefix = prefix;
 
             ServiceProcessor = serviceProcessor;
             var services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
@@ -117,14 +195,21 @@ namespace PromDapterSvc.Controllers
             _logger?.Log(LogLevel.Information, "Cache Initialized");
         }
 
-        private async Task<ContentResult> getPrometheusContent(string filter)
+        private async Task<ContentResult> getPrometheusContent(string filter, Dictionary<string, object> paramDictionary)
         {
             ContentResult content;
             var processor = ServiceProcessor.DataItemRegexPrometheusProcessor;
             {
                 var dump = new HWiNFOProvider();
+                var dump2 = new WMIProvider();
             }
-            var processingTasks = Services.Select(item => processor(item, null));
+            var processingTasks = Services.Select(item =>
+            {
+                string typeName = item.GetType().Name;
+                object parameters = null;
+                paramDictionary.TryGetValue(typeName, out parameters);
+                return processor(item, parameters);
+            });
             await Task.WhenAll(processingTasks);
             var processingResults = processingTasks.Select(item => item.Result).ToArray();
 
@@ -191,6 +276,16 @@ namespace PromDapterSvc.Controllers
             content = Content(textContent);
             return content;
         }
+
+        public static string GetConfigFilename()
+        {
+            //var yamlContent = await File.ReadAllTextAsync();
+            var fileName = "Prometheusmapping.yaml";
+            var commonAppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var commonFilePath = Path.Combine(commonAppDataFolder, "PromDapter", fileName);
+            return commonFilePath;
+        }
+
 
     }
 }

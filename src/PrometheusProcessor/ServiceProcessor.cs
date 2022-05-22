@@ -12,13 +12,19 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PromDapterDeclarations;
+using SensorMonHTTP;
 using SharpYaml.Model;
 
 namespace PrometheusProcessor
 {
     public class ServiceProcessor
     {
-        public delegate Task<(string mimeType, object data)> Processor(IPromDapterService service, object parameters);
+        public delegate ((string helpKey, string helpLineSingleSource, string helpLineMultipleSource) helpItems, string typeLine, string prometheusLine) PrometheusOutputFunc(DataItem dataItem);
+        public delegate (string sourceName, string sensorName, Dictionary<string, object> objectDict) JsonOutputFunc(DataItem dataItem);
+
+        public delegate Task<(string mimeType, object data)> ProcessorPrometheusOutput(IPromDapterService service, object parameters);
+        public delegate Task<(string mimeType, object data)> ProcessorJsonOutput(IPromDapterService service, object parameters);
+
 
         private string CurrentHostName = Environment.MachineName;
         public ServiceProcessor()
@@ -26,27 +32,35 @@ namespace PrometheusProcessor
 
         }
 
-        public async Task InitializeServices(IPromDapterService[] services)
+        public async Task InitializeServices(IPromDapterService[] services, string configFile)
         {
             Services = services;
-            RegexMapData = new YamlRegexMapData();
+            RegexMapData = YamlRegexMapData.InitializeFromFile(configFile);
             InitializeProcessors();
         }
 
+
+        //public GetPrometheusOutputFunc WMIProviderPrometheusFunc { get; set; } 
+
+        //public GetJsonOutputFunc WMIPRoviderJsonFunc { get; set; } 
+
+        //public GetPrometheusOutputFunc HWiNFOProviderPrometheusFunc { get; set; }
+
+        //public GetJsonOutputFunc HWiNFOProviderJsonFunc { get; set; } 
+
+
         public IPromDapterService[] Services { get; set; }
 
-        public Processor CurrentProcessor { get; set; }
+        //public Processor CurrentProcessor { get; set; }
 
-        public YamlRegexMapData RegexMapData = new YamlRegexMapData();
+        public YamlRegexMapData RegexMapData { get; set; }
 
-        public Processor DataItemRegexPrometheusProcessor { get; set; }
+        public ProcessorPrometheusOutput DataItemRegexPrometheusProcessor { get; set; }
 
-        public Processor DataItemRegexJsonProcessor { get; set; }
+        public ProcessorJsonOutput DataItemRegexJsonProcessor { get; set; }
 
-        public void InitializeProcessors(string providerMetrixPrefix = null)
+        public void InitializeProcessors()
         {
-            if (!String.IsNullOrEmpty(providerMetrixPrefix) && !providerMetrixPrefix.EndsWith("_"))
-                providerMetrixPrefix += "_";
             var dataItemRegexProcessorNameMap = new Dictionary<string, string>()
             {
                 { "MetricCategory", "Category" },
@@ -54,12 +68,158 @@ namespace PrometheusProcessor
                 { "Entity", null },
             };
 
+            PrometheusOutputFunc hwiPromFunc = item =>
+            {
+                var metadata = RegexMapData.GetSensorMetadata(item.Name);
+                bool hasMetaData = metadata != (null, null);
+                bool hasCategoryData = item.CategoryValues?.Any() == true;
+                if (!hasMetaData && !hasCategoryData)
+                    return default;
+                var metadataDict = hasMetaData
+                    ? new Dictionary<string, string>(metadata.MetadataDictionary)
+                    : item.CategoryValues.ToDictionary(kv => kv.Key,
+                        kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object,
+                            CultureInfo.InvariantCulture));
+                if (!metadataDict.TryGetValue("MetricName", out var metricName))
+                {
+                    //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                    metricName = item.Name;
+                    //return;
+                }
+
+                var unit = item.Unit;
+                var sensorName = item.Name;
+                var sensorType = item.Category;
+                var sourceName = item.Source.SourceName;
+                metadataDict.Add("unit", unit);
+                metadataDict.Add("sensor_type", sensorType);
+                metadataDict.Add("sensor", sensorName);
+                metadataDict.Add("source", sourceName);
+                metadataDict.Add("host", CurrentHostName);
+
+                // Move Entity name as prefix for MetricName
+                if (metadataDict.ContainsKey("Entity"))
+                {
+                    var entity = metadataDict["Entity"];
+                    metricName = entity + "_" + metricName;
+                }
+
+                if (!String.IsNullOrEmpty(unit))
+                {
+                    metricName += "_" + unit;
+                }
+
+                const string providerMetrixPrefix = "hwi_";
+
+                var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
+                var helpKey = $"# HELP {finalMetricName}";
+                var helpString = $"{helpKey} {metricName.Replace("_", " ")} - {sourceName}";
+                var multipleSourceHelpString = $"{helpKey} {metricName.Replace("_", " ")} - (multiple sources)";
+
+                var metricType = getMetrictType(unit);
+                string typeString = null;
+                if (metricType != null)
+                {
+                    typeString = $"# TYPE {finalMetricName} {metricType}";
+                }
+
+                var categoryParts = metadataDict.Keys
+                    .Select(mapKeyName)
+                    .Where(keyItem => keyItem.keyName != null)
+                    .Select(keyItem => $"{cleanupKeyName(keyItem.keyName)}=\"{metadataDict[keyItem.key]}\"").ToArray();
+                var categoryString = String.Join(",", categoryParts);
+                var promStr =
+                    $"{finalMetricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
+
+                return ((helpKey, helpString, multipleSourceHelpString), typeString, promStr);
+            };
+
+
+        PrometheusOutputFunc wmiPromFunc = item =>
+            {
+                var metadata = RegexMapData.GetSensorMetadata(item.Name);
+                bool hasMetaData = metadata != (null, null);
+                bool hasCategoryData = item.CategoryValues?.Any() == true;
+                if (!hasMetaData && !hasCategoryData)
+                    return default;
+                var metadataDict = hasMetaData
+                    ? new Dictionary<string, string>(metadata.MetadataDictionary)
+                    : item.CategoryValues.ToDictionary(kv => kv.Key,
+                        kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object, CultureInfo.InvariantCulture));
+                if (!metadataDict.TryGetValue("MetricName", out var metricName))
+                {
+                    //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                    metricName = item.Name;
+                    //return;
+                }
+
+                var unit = item.Unit;
+                var sensorName = item.Name;
+                var sensorType = item.Category;
+                var sourceName = item.Source.SourceName;
+                metadataDict.Add("unit", unit);
+                metadataDict.Add("sensor_type", sensorType);
+                metadataDict.Add("sensor", sensorName);
+                metadataDict.Add("source", sourceName);
+                metadataDict.Add("host", CurrentHostName);
+
+                // Move Entity name as prefix for MetricName
+                if (metadataDict.ContainsKey("Entity"))
+                {
+                    var entity = metadataDict["Entity"];
+                    metricName = entity + "_" + metricName;
+                }
+
+                if (!String.IsNullOrEmpty(unit))
+                {
+                    metricName += "_" + unit;
+                }
+
+                const string providerMetrixPrefix = "wmi_";
+
+                var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
+                var helpKey = $"# HELP {finalMetricName}";
+                var helpString = $"{helpKey} {metricName.Replace("_", " ")} - {sourceName}";
+                var multipleSourceHelpString = $"{helpKey} {metricName.Replace("_", " ")} - (multiple sources)";
+
+                var metricType = getMetrictType(unit);
+                string typeString = null;
+                if (metricType != null)
+                {
+                    typeString = $"# TYPE {finalMetricName} {metricType}";
+                }
+                var categoryParts = metadataDict.Keys
+                    .Select(mapKeyName)
+                    .Where(keyItem => keyItem.keyName != null)
+                    .Select(keyItem => $"{cleanupKeyName(keyItem.keyName)}=\"{metadataDict[keyItem.key]}\"").ToArray();
+                var categoryString = String.Join(",", categoryParts);
+                var promStr =
+                    $"{finalMetricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
+
+                return ((helpKey, helpString, multipleSourceHelpString), typeString, promStr);
+            };
+
+
+        JsonOutputFunc hwiJsonFunc = null;
+        JsonOutputFunc wmiJsonFunc = null;
+
+        var itemProcessorDict =
+                new Dictionary<string, (PrometheusOutputFunc prometheusOutputFunc, JsonOutputFunc jsonOutputFunc)>();
+
+        itemProcessorDict.Add("SensorMonHTTP.WMIProvider", (wmiPromFunc, wmiJsonFunc));
+        itemProcessorDict.Add("SensorMonHTTP.HWiNFOProvider",
+            (hwiPromFunc, hwiJsonFunc));
+
+
+
 
             DataItemRegexPrometheusProcessor = async (service, parameters) =>
             {
+                var serviceTypeName = service.GetType().FullName;
+                var outputFunc = itemProcessorDict[serviceTypeName].prometheusOutputFunc;
 
                 await service.Open();
-                var dataItems = await service.GetDataItems() ;
+                var dataItems = await service.GetDataItems((object[]) parameters) ;
                 await service.Close(true);
 
                 if (dataItems == null)
@@ -70,6 +230,8 @@ namespace PrometheusProcessor
                 // Above 4 we're starting to get diminishing returns; tested on 16 Core Ryzen 3950X with 370 metrics
                 // thus we estimate around 100 per core is sensible metric worthwhile the scheduling
                 var degreeOfParallelism = (int) Math.Ceiling(itemCount / MinimumAmountPerCore);
+                if (Debugger.IsAttached)
+                    degreeOfParallelism = 1;
                 var parallelBag = new ConcurrentBag<(string helpKey, string typeString, string[] metricLines)>();
                 // Dicting helpDict to avoid errors on multiple helps
                 var helpDict = new ConcurrentDictionary<string, string>();
@@ -80,58 +242,21 @@ namespace PrometheusProcessor
                     },
                     item =>
                     {
-                        var metadata = RegexMapData.GetSensorMetadata(item.Name);
-                        if (metadata == (null, null))
+                        var itemOutput = outputFunc(item);
+                        if (itemOutput.prometheusLine == null)
                             return;
-                        var metadataDict = new Dictionary<string, string>(metadata.MetadataDictionary);
-                        if (!metadataDict.TryGetValue("MetricName", out var metricName))
-                        {
-                            Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
-                            return;
-                        }
+                        var helpItems = itemOutput.helpItems;
+                        var helpKey = helpItems.helpKey;
+                        var helpString = helpItems.helpLineSingleSource;
+                        var multipleSourceHelpString = helpItems.helpLineMultipleSource;
 
-                        var unit = item.Unit;
-                        var sensorName = item.Name;
-                        var sensorType = item.Category;
-                        var sourceName = item.Source.SourceName;
-                        metadataDict.Add("unit", unit);
-                        metadataDict.Add("sensor_type", sensorType);
-                        metadataDict.Add("sensor", sensorName);
-                        metadataDict.Add("source", sourceName);
-                        metadataDict.Add("host", CurrentHostName);
-
-                        // Move Entity name as prefix for MetricName
-                        if (metadataDict.ContainsKey("Entity"))
-                        {
-                            var entity = metadataDict["Entity"];
-                            metricName = entity + "_" + metricName;
-                        }
-
-                        if (!String.IsNullOrEmpty(unit))
-                        {
-                            metricName += "_" + unit;
-                        }
-
-                        var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
-                        var helpKey = $"# HELP {finalMetricName}";
-                        var helpString = $"{helpKey} {metricName.Replace("_", " ")} - {sourceName}";
-                        var multipleSourceHelpString = $"{helpKey} {metricName.Replace("_", " ")} - (multiple sources)";
+                        string typeLine = itemOutput.typeLine;
+                        var prometheusLine = itemOutput.prometheusLine;
+                        
                         // If already exists with different name, add multiple sources name
-                        helpDict.AddOrUpdate(helpKey, helpString, (key, oldValue) => helpString == oldValue ? oldValue : multipleSourceHelpString);
-                        var metricType = getMetrictType(unit);
-                        string typeString = null;
-                        if (metricType != null)
-                        {
-                            typeString = $"# TYPE {finalMetricName} {metricType}";
-                        }
-                        var categoryParts = metadataDict.Keys
-                            .Select(mapKeyName)
-                            .Where(keyItem => keyItem.keyName != null)
-                            .Select(keyItem => $"{cleanupKeyName(keyItem.keyName)}=\"{metadataDict[keyItem.key]}\"").ToArray();
-                        var categoryString = String.Join(",", categoryParts);
-                        var promStr =
-                            $"{finalMetricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
-                        parallelBag.Add((helpKey, typeString, new[] {promStr}));
+                        var helpLine = helpDict.AddOrUpdate(helpKey, helpString, (key, oldValue) => helpString == oldValue ? oldValue : multipleSourceHelpString);
+
+                        parallelBag.Add((helpKey, typeLine, new[] {prometheusLine}));
                     });
                 var grouped = parallelBag
                     .OrderBy(item => helpDict[item.helpKey]).ThenBy(item => item.typeString)
@@ -147,13 +272,19 @@ namespace PrometheusProcessor
 
             DataItemRegexJsonProcessor = async (service, parameters) =>
             {
+                var serviceTypeName = service.GetType().FullName;
+                var outputFunc = itemProcessorDict[serviceTypeName].prometheusOutputFunc;
+
                 bool flattenMeta = false;
                 const string FlattenMetaName = nameof(flattenMeta);
                 string[] groupBy;
                 const string GroupByName = nameof(groupBy);
 
                 await service.Open();
-                var dataItems = await service.GetDataItems();
+                object[] serviceParams = null;
+                if (service is WMIProvider)
+                    serviceParams = new object[] { "Win32_LogicalDisk" };
+                var dataItems = await service.GetDataItems(serviceParams);
                 await service.Close(true);
 
                 if (dataItems == null)
@@ -170,6 +301,8 @@ namespace PrometheusProcessor
                 // Above 4 we're starting to get diminishing returns; tested on 16 Core Ryzen 3950X with 370 metrics
                 // thus we estimate around 100 per core is sensible metric worthwhile the scheduling
                 var degreeOfParallelism = (int)Math.Ceiling(itemCount / MinimumAmountPerCore);
+                if (Debugger.IsAttached)
+                    degreeOfParallelism = 1;
                 var parallelBag = new ConcurrentBag<(string sourceName, string sensorName, Dictionary<string, object> dataObject)>();
 
                 Parallel.ForEach(dataItems, new ParallelOptions()
@@ -179,14 +312,19 @@ namespace PrometheusProcessor
                     item =>
                     {
                         var metadata = RegexMapData.GetSensorMetadata(item.Name);
-                        if (metadata == (null, null))
+                        bool hasMetaData = metadata != (null, null);
+                        bool hasCategoryData = item.CategoryValues?.Any() == true;
+                        if (!hasMetaData && !hasCategoryData)
                             return;
-                        var metadataDict = metadata.MetadataDictionary;
-                        var objectDict = new Dictionary<string, object>();
+                        var metadataDict = hasMetaData
+                            ? new Dictionary<string, string>(metadata.MetadataDictionary)
+                            : item.CategoryValues.ToDictionary(kv => kv.Key,
+                                kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object, CultureInfo.InvariantCulture));
                         if (!metadataDict.TryGetValue("MetricName", out var metricName))
                         {
-                            Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
-                            return;
+                            //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                            //return;
+                            metricName = item.Name;
                         }
 
                         var unit = item.Unit;
@@ -195,7 +333,8 @@ namespace PrometheusProcessor
                         var sourceName = item.Source.SourceName;
                         var value = item.Value.Object;
                         var valueType = item.Value.Type.Name;
-                        
+
+                        var objectDict = new Dictionary<string, object>();
                         objectDict.Add("unit", unit);
                         objectDict.Add("sensor_type", sensorType);
                         objectDict.Add("sensor", sensorName);
@@ -228,6 +367,8 @@ namespace PrometheusProcessor
                         {
                             metricName += "_" + unit;
                         }
+
+                        const string providerMetrixPrefix = "hwi_";
 
                         var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
                         objectDict.Add("metric", finalMetricName);
@@ -286,6 +427,7 @@ namespace PrometheusProcessor
 
 
             };
+
 
             (string key, string keyName) mapKeyName(string key)
             {

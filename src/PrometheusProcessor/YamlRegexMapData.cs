@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text.RegularExpressions;
+using PromDapterDeclarations;
 using SharpYaml.Serialization;
 
 namespace PrometheusProcessor
@@ -21,21 +22,13 @@ namespace PrometheusProcessor
 
         public Regex[] AllRegexes = new Regex[0];
 
-        public YamlRegexMapData()
+        private YamlRegexMapData()
         {
-            InitializeRegexDict();
+
         }
 
-        public void InitializeRegexDict()
+        public static YamlRegexMapData InitializeFromFile(string fileName)
         {
-            //var yamlContent = await File.ReadAllTextAsync();
-            var fileName = "Prometheusmapping.yaml";
-            var commonAppDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            var commonFilePath = Path.Combine(commonAppDataFolder, "PromDapter", fileName);
-            if (File.Exists(commonFilePath) && !Debugger.IsAttached)
-            {
-                fileName = commonFilePath;
-            }
             object obj = null;
             using (var textStream = File.OpenText(fileName))
             {
@@ -44,6 +37,24 @@ namespace PrometheusProcessor
             }
 
             dynamic dyn = obj;
+
+            if (!PropertyExists(dyn, "mapping"))
+            {
+                if (PropertyExists(dyn, "mappers"))
+                {
+                    var combinedMapping = ((List<object>) dyn.mappers)
+                        .Where((object item) => ((Dictionary<object, object>) item).ContainsKey("mapping"))
+                        .SelectMany((dynamic item) => (List<object>) item["mapping"]).ToList();
+                    dyn.mapping = combinedMapping;
+                    /*
+                    var hwInfoMapper = ((List<object>) dyn.mappers)
+                        .FirstOrDefault((dynamic item) => item["name"] == "HWiNFOProvider");
+                    if(hwInfoMapper != null)
+                        dyn.mapping = hwInfoMapper["mapping"];
+                    */
+                }
+            }
+
             var metricTypeDict = new Dictionary<string, Regex[]>();
             List<Regex> allRegexes = new List<Regex>();
             foreach (var mapping in dyn.mapping)
@@ -60,8 +71,11 @@ namespace PrometheusProcessor
                 //Debug.WriteLine($"Pattern(s):");
                 //Debug.WriteLine(String.Join(Environment.NewLine, patterns));
             }
-            MetricTypeRegexDict = metricTypeDict;
-            AllRegexes = allRegexes.ToArray();
+
+            var result = new YamlRegexMapData();
+            result.MetricTypeRegexDict = metricTypeDict;
+            result.AllRegexes = allRegexes.ToArray();
+            return result;
         }
 
         public (Regex MatchingRegex, Dictionary<string, string> MetadataDictionary) GetSensorMetadata(string sensorName)
@@ -99,5 +113,16 @@ namespace PrometheusProcessor
             SensorMetadataDict.TryAdd(sensorName, metadataDict);
             return (regex, metadataDict);
         }
+
+        public static bool PropertyExists(dynamic obj, string name)
+        {
+            if (obj == null) return false;
+            if (obj is IDictionary<string, object> dict)
+                return dict.ContainsKey(name);
+            if (obj is Newtonsoft.Json.Linq.JObject)
+                return ((Newtonsoft.Json.Linq.JObject)obj).ContainsKey(name);
+            return obj.GetType().GetProperty(name) != null;
+        }
     }
+
 }

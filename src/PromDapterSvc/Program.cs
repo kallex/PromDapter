@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.EventLog;
 
 namespace PromDapterSvc
 {
@@ -25,10 +24,16 @@ namespace PromDapterSvc
                     webBuilder.UseStartup<Startup>();
                     webBuilder.UseUrls("http://0.0.0.0:10445");
                 })
-                .ConfigureLogging(loggingBuilder => { loggingBuilder.AddEventLog(logSettings =>
+                .ConfigureLogging(loggingBuilder =>
+                {
+                    loggingBuilder.AddEventSourceLogger();
+                    //loggingBuilder.AddEventLog();
+                    /*
+                    logSettings =>
                     {
                         logSettings.SourceName = nameof(PromDapterSvc);
                         logSettings.Filter = (s, level) => true;
-                    }); });
+                    });*/
+                });
     }
 }
