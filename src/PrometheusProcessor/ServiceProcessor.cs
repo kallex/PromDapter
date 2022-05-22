@@ -59,10 +59,8 @@ namespace PrometheusProcessor
 
         public ProcessorJsonOutput DataItemRegexJsonProcessor { get; set; }
 
-        public void InitializeProcessors(string providerMetrixPrefix = null)
+        public void InitializeProcessors()
         {
-            if (!String.IsNullOrEmpty(providerMetrixPrefix) && !providerMetrixPrefix.EndsWith("_"))
-                providerMetrixPrefix += "_";
             var dataItemRegexProcessorNameMap = new Dictionary<string, string>()
             {
                 { "MetricCategory", "Category" },
@@ -70,70 +68,74 @@ namespace PrometheusProcessor
                 { "Entity", null },
             };
 
-        PrometheusOutputFunc hwiPromFunc = item =>
-        {
-            var metadata = RegexMapData.GetSensorMetadata(item.Name);
-            bool hasMetaData = metadata != (null, null);
-            bool hasCategoryData = item.CategoryValues?.Any() == true;
-            if (!hasMetaData && !hasCategoryData)
-                return default;
-            var metadataDict = hasMetaData
-                ? new Dictionary<string, string>(metadata.MetadataDictionary)
-                : item.CategoryValues.ToDictionary(kv => kv.Key,
-                    kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object, CultureInfo.InvariantCulture));
-            if (!metadataDict.TryGetValue("MetricName", out var metricName))
+            PrometheusOutputFunc hwiPromFunc = item =>
             {
-                //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
-                metricName = item.Name;
-                //return;
-            }
+                var metadata = RegexMapData.GetSensorMetadata(item.Name);
+                bool hasMetaData = metadata != (null, null);
+                bool hasCategoryData = item.CategoryValues?.Any() == true;
+                if (!hasMetaData && !hasCategoryData)
+                    return default;
+                var metadataDict = hasMetaData
+                    ? new Dictionary<string, string>(metadata.MetadataDictionary)
+                    : item.CategoryValues.ToDictionary(kv => kv.Key,
+                        kv => Convert.ToString(kv.Value.Cast<DataValue>().FirstOrDefault()?.Object,
+                            CultureInfo.InvariantCulture));
+                if (!metadataDict.TryGetValue("MetricName", out var metricName))
+                {
+                    //Debug.WriteLine($"Warning: No MetricName retrieved - {item.Name}");
+                    metricName = item.Name;
+                    //return;
+                }
 
-            var unit = item.Unit;
-            var sensorName = item.Name;
-            var sensorType = item.Category;
-            var sourceName = item.Source.SourceName;
-            metadataDict.Add("unit", unit);
-            metadataDict.Add("sensor_type", sensorType);
-            metadataDict.Add("sensor", sensorName);
-            metadataDict.Add("source", sourceName);
-            metadataDict.Add("host", CurrentHostName);
+                var unit = item.Unit;
+                var sensorName = item.Name;
+                var sensorType = item.Category;
+                var sourceName = item.Source.SourceName;
+                metadataDict.Add("unit", unit);
+                metadataDict.Add("sensor_type", sensorType);
+                metadataDict.Add("sensor", sensorName);
+                metadataDict.Add("source", sourceName);
+                metadataDict.Add("host", CurrentHostName);
 
-            // Move Entity name as prefix for MetricName
-            if (metadataDict.ContainsKey("Entity"))
-            {
-                var entity = metadataDict["Entity"];
-                metricName = entity + "_" + metricName;
-            }
+                // Move Entity name as prefix for MetricName
+                if (metadataDict.ContainsKey("Entity"))
+                {
+                    var entity = metadataDict["Entity"];
+                    metricName = entity + "_" + metricName;
+                }
 
-            if (!String.IsNullOrEmpty(unit))
-            {
-                metricName += "_" + unit;
-            }
+                if (!String.IsNullOrEmpty(unit))
+                {
+                    metricName += "_" + unit;
+                }
 
-            var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
-            var helpKey = $"# HELP {finalMetricName}";
-            var helpString = $"{helpKey} {metricName.Replace("_", " ")} - {sourceName}";
-            var multipleSourceHelpString = $"{helpKey} {metricName.Replace("_", " ")} - (multiple sources)";
+                const string providerMetrixPrefix = "hwi_";
 
-            var metricType = getMetrictType(unit);
-            string typeString = null;
-            if (metricType != null)
-            {
-                typeString = $"# TYPE {finalMetricName} {metricType}";
-            }
-            var categoryParts = metadataDict.Keys
-                .Select(mapKeyName)
-                .Where(keyItem => keyItem.keyName != null)
-                .Select(keyItem => $"{cleanupKeyName(keyItem.keyName)}=\"{metadataDict[keyItem.key]}\"").ToArray();
-            var categoryString = String.Join(",", categoryParts);
-            var promStr =
-                $"{finalMetricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
+                var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
+                var helpKey = $"# HELP {finalMetricName}";
+                var helpString = $"{helpKey} {metricName.Replace("_", " ")} - {sourceName}";
+                var multipleSourceHelpString = $"{helpKey} {metricName.Replace("_", " ")} - (multiple sources)";
 
-            return ((helpKey, helpString, multipleSourceHelpString), typeString, promStr);
-        };
+                var metricType = getMetrictType(unit);
+                string typeString = null;
+                if (metricType != null)
+                {
+                    typeString = $"# TYPE {finalMetricName} {metricType}";
+                }
+
+                var categoryParts = metadataDict.Keys
+                    .Select(mapKeyName)
+                    .Where(keyItem => keyItem.keyName != null)
+                    .Select(keyItem => $"{cleanupKeyName(keyItem.keyName)}=\"{metadataDict[keyItem.key]}\"").ToArray();
+                var categoryString = String.Join(",", categoryParts);
+                var promStr =
+                    $"{finalMetricName}{{{categoryString}}} {Convert.ToString(item.Value.Object, CultureInfo.InvariantCulture)}";
+
+                return ((helpKey, helpString, multipleSourceHelpString), typeString, promStr);
+            };
 
 
-            PrometheusOutputFunc wmiPromFunc = item =>
+        PrometheusOutputFunc wmiPromFunc = item =>
             {
                 var metadata = RegexMapData.GetSensorMetadata(item.Name);
                 bool hasMetaData = metadata != (null, null);
@@ -172,6 +174,8 @@ namespace PrometheusProcessor
                 {
                     metricName += "_" + unit;
                 }
+
+                const string providerMetrixPrefix = "wmi_";
 
                 var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
                 var helpKey = $"# HELP {finalMetricName}";
@@ -363,6 +367,8 @@ namespace PrometheusProcessor
                         {
                             metricName += "_" + unit;
                         }
+
+                        const string providerMetrixPrefix = "hwi_";
 
                         var finalMetricName = $"{providerMetrixPrefix}{cleanupMetricName(metricName)}";
                         objectDict.Add("metric", finalMetricName);

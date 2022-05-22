@@ -30,12 +30,25 @@ namespace PromDapterSvc.Controllers
 
         private static ServiceProcessor ServiceProcessor = null;
         private static IPromDapterService[] Services = null;
-        private static string Prefix = null;
+        //private static string Prefix = null;
 
         private static SemaphoreSlim Semaphore = new SemaphoreSlim(1);
 
         public async Task initServiceProcessor()
         {
+            // TODO: Move WMI provider and providers in general to be dynamically addable
+            var configFilename = GetConfigFilename();
+            var wmiData = YamlWMIProviderData.InitializeFromFile(configFilename);
+            var providerParams = YamlWMIProviderData.GetWMIParameters(wmiData.WMIServiceData);
+
+            ServiceParamDictionary = new Dictionary<string, object>()
+            {
+                {
+                    nameof(WMIProvider), providerParams.Cast<object>().ToArray()
+                }
+            };
+
+            /*
             var configuredPrefix = Configuration?["PrometheusMetricPrefix"];
             const string defaultPrefix = "hwi_";
             string prefix;
@@ -46,9 +59,11 @@ namespace PromDapterSvc.Controllers
             }
             else
                 prefix = configuredPrefix;
+            */
             var serviceProcessor = new ServiceProcessor();
-            serviceProcessor.InitializeProcessors(prefix);
-            Prefix = prefix;
+            //serviceProcessor.InitializeProcessors(prefix);
+            serviceProcessor.InitializeProcessors();
+            //Prefix = prefix;
 
 
             ServiceProcessor = serviceProcessor;
@@ -68,17 +83,6 @@ namespace PromDapterSvc.Controllers
 
         static MetricsController()
         {
-            var configFilename = GetConfigFilename();
-            var wmiData = YamlWMIProviderData.InitializeFromFile(configFilename);
-            var providerParams = YamlWMIProviderData.GetWMIParameters(wmiData.WMIServiceData);
-
-
-            ServiceParamDictionary = new Dictionary<string, object>()
-            {
-                {
-                    nameof(WMIProvider), providerParams.Cast<object>().ToArray()
-                }
-            };
         }
 
         private static Dictionary<string, object> ServiceParamDictionary;
@@ -93,14 +97,14 @@ namespace PromDapterSvc.Controllers
                 return Content("Semaphore failed");
             try
             {
-                var prefix = Prefix;
+                //var prefix = Prefix;
                 var serviceProcessor = ServiceProcessor;
                 IPromDapterService[] services = Services;
                 bool isResetFilter = filter == ResetFilterName;
                 bool isJsonFilter = filter == JsonFilterName;
                 if (isResetFilter)
                 {
-                    Prefix = null;
+                    //Prefix = null;
                     ServiceProcessor = null;
                     _logger?.Log(LogLevel.Information, "Cache Reset");
                     return Content("Resetted");
@@ -128,10 +132,12 @@ namespace PromDapterSvc.Controllers
                         item.Contains(filter, StringComparison.InvariantCultureIgnoreCase));
                 }
                 */
+                /*
                 if (ServiceProcessor == null)
                 {
                     await initServiceCache();
                 }
+                */
 
                 ContentResult content = null;
                 if (isJsonFilter)
@@ -148,7 +154,7 @@ namespace PromDapterSvc.Controllers
             catch (Exception ex)
             {
                 ServiceProcessor = null;
-                Prefix = null;
+                //Prefix = null;
                 _logger.LogCritical(ex, "Unhandled error");
                 if (filter == DebugFilterName)
                 {
@@ -163,6 +169,8 @@ namespace PromDapterSvc.Controllers
             }
         }
 
+
+        [Obsolete("Not used", true)]
         private async Task initServiceCache()
         {
             string prefix;
@@ -177,8 +185,9 @@ namespace PromDapterSvc.Controllers
                 prefix = configuredPrefix;
 
             var serviceProcessor = new ServiceProcessor();
-            serviceProcessor.InitializeProcessors(prefix);
-            Prefix = prefix;
+            //serviceProcessor.InitializeProcessors(prefix);
+            serviceProcessor.InitializeProcessors();
+            //Prefix = prefix;
 
             ServiceProcessor = serviceProcessor;
             var services = await ServiceProcessor.GetServices(Assembly.GetExecutingAssembly());
