@@ -112,7 +112,7 @@ namespace PromDapterSvc.Controllers
 
                 if (ServiceProcessor == null)
                     await initServiceProcessor();
-                
+
 
                 /*
                 var processor = serviceProcessor.DataItemRegexProcessor;
@@ -150,6 +150,10 @@ namespace PromDapterSvc.Controllers
                 }
 
                 return content;
+            }
+            catch (FileNotFoundException ex)
+            {
+                return Content("Check HWiNFO Shared Memory setting");
             }
             catch (Exception ex)
             {
