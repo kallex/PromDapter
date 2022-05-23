@@ -15,6 +15,8 @@ Setup:
 - Service is serving on port 10445 (need to open it in firewall for TCP protocol)
 - Setup is supposed to not overwrite existing 
 
+- Alpha/beta stage: Windows Management Instrumentation (WMI) support added
+
 URLs:
 http://localhost:10445/metrics
 - Serves Prometheus-formed metrics
@@ -25,7 +27,7 @@ http://localhost:10445/metrics/help
 http://localhost:10445/metrics/reset
 - Resets internal caches (= reloads "C:\ProgramData\PromDapter\Prometheusmapping.yaml" on next request)
 
-JSON support:
+JSON support (does not support WMI metrics currently):
 http://localhost:10445/metrics/json
 http://localhost:10445/metrics/json?option=flattenMeta
 
@@ -36,7 +38,7 @@ Configuration/Metric definition:
 
 TODO (next):
 - Configurable server port (currently fixed 10445)
-- Configurable metric prefix (currently fixed hwi_)
+- Configurable metric prefix (currently fixed hwi_ & wmi_)
 
 TODO (needs to be done):
 - Finish remaining HWiNFO sensors (various voltage, fan sensor naming properly)
