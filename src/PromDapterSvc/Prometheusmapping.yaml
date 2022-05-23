@@ -2,10 +2,7 @@
 metadata:
   description: HWiNFO to Prometheus Metric Mapping data
 
-mappers:
-- name: HWiNFOProvider
-  assembly: HWiNFOProvider.dll
-  mapping:
+mapping:
   - name: IndividualValues
     patterns: 
     # System/Memory
@@ -37,6 +34,8 @@ mappers:
     - '(?<Entity_GPU>)(?<MetricName>PCIe Link Speed)'
     - '(?<Entity_GPU>)(?<MetricName>Performance Limit) - (?<MetricCategoy>Power|Thermal|Reliability Voltage|Max Operating Voltage|Utilization|SLI GPUBoost Sync)'
     - 'Total (?<Entity>GPU) (?<MetricName>Power) (?<MetricCategory>.*)'
+    # PSU
+    - '(?<Entity>PSU) (?<MetricName>Temperature2|Temperature|Fan|Power \(sum\)|Power|Efficiency)'
     # Network
     - '(?<Entity_Network>)Current (?<MetricName>DL rate|UP rate)'
     # S.M.A.R.T.
@@ -45,17 +44,41 @@ mappers:
     - '(?<Entity_Drive>)(?<MetricName>Read Activity|Write Activity|Total Activity|Read Rate|Write Rate)'
     # UPS
     - '(?<Entity_UPS>)(?<MetricName>UPS Load|Input Voltage|Output Voltage|Charge Level|Estimated Runtime|AC Power|Charging|Discharging)'
+    # Test additions
+    - '(?<Entity>Core) (?<CoreNo>\d+)'
+    - '(?<Entity>CPU) (?<MetricName>Package Power|Package|IA Cores|GT Cores \(Graphics\))'
+    #    - '(?<Entity>CPU) (?<MetricName>Package|IA Cores|GT Cores \(Graphics\))'
+    - '(?<Entity_MB>)(?<MetricName>(SYSTIN|System|Auxtin \d|CPU \(PECI\)|\+3\.3V|\+5V|\+12V|Chipset))'
   - name: AggregateValues
     patterns:
     - '(?<AggregationType>Average) (?<MetricName>(Effective Clock))'
     - '(?<AggregationType>Max) (?<MetricCategory>.*) (?<MetricName>(Usage))'
     - '(?<AggregationType>Total) (?<MetricCategory>.*) (?<MetricName>(Usage))'
-    #    - '(?<Entity_Network>)(?<AggregationType>Total) (?<MetricName>DL|UL)' # Total only over monitoring session time, since start of HWiNFO
+    #    - '(?<Entity_Network>)(?<AggregationType>Total) (?<MetricName>DL|UP)' # Total only over monitoring session time, since start of HWiNFO
     - '(?<Entity_Drive>)(?<AggregationType>Total) (?<MetricName>Host Writes|Host Reads)'
     #    - '(?<Entity_Drive>)(?<MetricName>Read|Write) (?<AggregationType>Total)' # Total only over monitoring session time, since start of HWiNFO
-- name: Linux
-  procs:
-  - procName:
-    mapping:
 
-   
+wmiService:
+  sources:
+  - source: Win32_Process
+    ids:
+    - Name
+    - ProcessId
+    values:
+    - name: ThreadCount
+  - source: Win32_LogicalDisk
+    name: Disk
+    ids:
+    - DeviceID
+    values:
+    - name: Size
+      unit: Byte
+    - name: FreeSpace
+      unit: Byte
+  - source: Win32_PerfFormattedData_PerfProc_Process
+    name: Process
+    ids:
+    - Name
+    values:
+    - name: WorkingSetPrivate
+      unit: Byte

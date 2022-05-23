@@ -64,6 +64,8 @@ wmiService:
     ids:
     - Name
     - ProcessId
+    values:
+    - name: ThreadCount
   - source: Win32_LogicalDisk
     name: Disk
     ids:
@@ -72,4 +74,11 @@ wmiService:
     - name: Size
       unit: Byte
     - name: FreeSpace
+      unit: Byte
+  - source: Win32_PerfFormattedData_PerfProc_Process
+    name: Process
+    ids:
+    - Name
+    values:
+    - name: WorkingSetPrivate
       unit: Byte
