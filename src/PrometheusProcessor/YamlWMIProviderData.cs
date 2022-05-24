@@ -39,8 +39,9 @@ namespace PrometheusProcessor
         public static (string wmiClassName, string[] identifiers, (string property, string unit)[] propertyFilter)[] GetWMIParameters(
             WMIService wmiService)
         {
-            var result = wmiService.Sources.Select(item =>
-                (item.Source, item.IDs?.ToArray() ?? new string[0], (item.Values?.Select(val => (val.Name, val.Unit)).ToArray() ?? new (string, string)[0]))).ToArray();
+            var result = wmiService?.Sources?.Select(item =>
+                (item.Source, item.IDs?.ToArray() ?? new string[0], (item.Values?.Select(val => (val.Name, val.Unit)).ToArray() ?? 
+                                                                     new (string, string)[0]))).ToArray() ?? new (string wmiClassName, string[] identifiers, (string property, string unit)[] propertyFilter)[0];
             return result;
         }
 
