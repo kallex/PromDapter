@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Reflection;
 using System.Runtime;
 using System.Threading;
@@ -155,6 +156,15 @@ namespace PromDapterSvc.Controllers
             {
                 return Content("Check HWiNFO Shared Memory setting");
             }
+            catch (ManagementException mEx)
+            {
+                return Content(mEx.ToString());
+            }
+            catch (ArgumentException aEx)
+            {
+                return Content(aEx.ToString());
+            }
+
             catch (Exception ex)
             {
                 ServiceProcessor = null;

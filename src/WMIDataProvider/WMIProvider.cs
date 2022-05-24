@@ -45,34 +45,43 @@ namespace SensorMonHTTP
                 }
 
                 var queryText = $"SELECT {selectPart} FROM {itemName}";
-                var unitDict = propertyFilter.ToDictionary(item => item.name, item => item.unit);
-                using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
-                using (var mosResult = managementObjectSearcher.Get())
+                try
                 {
-                    foreach (var managementBaseObject in mosResult)
+                    var unitDict = propertyFilter.ToDictionary(item => item.name, item => item.unit);
+                    using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
+                    using (var mosResult = managementObjectSearcher.Get())
                     {
-                        Source source = new Source();
-                        var identifierProps = managementBaseObject.Properties
-                            .Cast<PropertyData>()
-                            .Where(pd => identifierNames.Contains(pd.Name))
-                            .OrderBy(pd => Array.IndexOf(identifierNames, pd.Name)).ToArray();
-                        source.SourceName = itemName;
-                        var categoryValues = identifierProps.ToDictionary(pd => pd.Name,
-                            pd => new[]
-                            {
-                                new DataValue() {Object = pd.Value, Type = pd.Value?.GetType() ?? typeof(object)}
-                            });
-                        var dataItems = getDataItems(managementBaseObject, source, unitDict, specifiedPropertyDict).ToArray();
-                        foreach (var item in dataItems)
+                        foreach (var managementBaseObject in mosResult)
                         {
-                            item.CategoryValues = categoryValues;
-                            //item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
-                            //item.CategoryValues.Add("MetricName",
-                            //    new[] {new DataValue() {Object = item.Name, Type = item.Name?.GetType()}});
-                        }
+                            Source source = new Source();
+                            var identifierProps = managementBaseObject.Properties
+                                .Cast<PropertyData>()
+                                .Where(pd => identifierNames.Contains(pd.Name))
+                                .OrderBy(pd => Array.IndexOf(identifierNames, pd.Name)).ToArray();
+                            source.SourceName = itemName;
+                            var categoryValues = identifierProps.ToDictionary(pd => pd.Name,
+                                pd => new[]
+                                {
+                                    new DataValue() { Object = pd.Value, Type = pd.Value?.GetType() ?? typeof(object) }
+                                });
+                            var dataItems = getDataItems(managementBaseObject, source, unitDict, specifiedPropertyDict)
+                                .ToArray();
+                            foreach (var item in dataItems)
+                            {
+                                item.CategoryValues = categoryValues;
+                                //item.CategoryValues = categoryValues.ToDictionary(kv => kv.Key, kv => kv.Value);
+                                //item.CategoryValues.Add("MetricName",
+                                //    new[] {new DataValue() {Object = item.Name, Type = item.Name?.GetType()}});
+                            }
 
-                        result.AddRange(dataItems);
+                            result.AddRange(dataItems);
+                        }
                     }
+                }
+                catch (ManagementException mEx)
+                {
+                    var message = $"Error in WMI Provider Query: {queryText}";
+                    throw new ArgumentException(message, mEx);
                 }
             }
 
