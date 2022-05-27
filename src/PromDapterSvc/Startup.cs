@@ -24,7 +24,7 @@ namespace PromDapterSvc
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers(options => options.EnableEndpointRouting = false);
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
@@ -34,6 +34,7 @@ namespace PromDapterSvc
                     builder.AllowAnyOrigin();
                 });
             });
+            services.AddRazorPages();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,11 +49,14 @@ namespace PromDapterSvc
 
             app.UseCors();
 
+            //app.UseMvc(builder => builder.ApplicationBuilder.);
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapRazorPages();
             });
         }
     }
