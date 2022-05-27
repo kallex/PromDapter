@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
@@ -17,7 +18,7 @@ namespace PromDapterSvc.Controllers
         public ActionResult Index(string filter = null)
         {
             var namespaces = GetWmiNamespaces("root");
-
+            /*
             List<(string namespaceName, string className)> fullClassNames =
                 new List<(string namespaceName, string className)>();
             foreach (String namespaceName in namespaces)
@@ -30,7 +31,12 @@ namespace PromDapterSvc.Controllers
                 }
 
             }
-            return View();
+            */
+            var model = new
+            {
+                namespaces
+            };
+            return View(model);
         }
 
         // GET: WMIAdminController/Details/5
@@ -88,6 +94,56 @@ namespace PromDapterSvc.Controllers
         {
             return View();
         }
+        
+        [HttpGet]
+        [Route("WMIAdmin/OpenWMINamespace")]
+        public ActionResult OpenWMINamespace(string namespaceName)
+        {
+            List<(string namespaceName, string className)> fullClassNames =
+                new List<(string namespaceName, string className)>();
+            var classNames = GetClassNamesWithinWmiNamespace(namespaceName);
+            foreach (var className in classNames)
+            {
+                Debug.WriteLine($"{namespaceName}:{className}");
+                fullClassNames.Add((namespaceName, className));
+            }
+
+            return View("WMINamespace", new { classNames });
+        }
+
+        [HttpGet]
+        [Route("WMIAdmin/OpenWMIClass")]
+        public IActionResult OpenWmiClass(string className)
+        {
+            string queryText = $"select * from {className}";
+            var dataTable = new DataTable();
+            using (var managementObjectSearcher = new ManagementObjectSearcher(queryText))
+            using (var mosResult = managementObjectSearcher.Get())
+            {
+                foreach (var managementBaseObject in mosResult)
+                {
+                    var propertyData = managementBaseObject.Properties.Cast<PropertyData>().ToArray();
+                    if (dataTable.Columns.Count == 0)
+                    {
+                        var dataColumns = propertyData.Select(item => new DataColumn(item.Name)).ToArray();
+                        dataTable.Columns.AddRange(dataColumns);
+                    }
+
+                    var dataRow = dataTable.NewRow();
+                    foreach (var prop in propertyData)
+                    {
+                        dataRow[prop.Name] = prop.Value;
+                    }
+
+                    dataTable.Rows.Add(dataRow);
+                }
+            }
+
+            return View("WMIClass", new { DataTable = dataTable });
+
+        }
+
+
 
         // POST: WMIAdminController/Delete/5
         [HttpPost]
@@ -141,6 +197,7 @@ namespace PromDapterSvc.Controllers
             }
             return classes.OrderBy(s => s).ToList();
         }
+
     }
 }
 

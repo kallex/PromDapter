@@ -7,3 +7,10 @@
 
 <input type="button" value="Create" onclick="location.href = '@Url.Action("Create", "WMIAdmin", new {})'" />
 @Html.ActionLink("Submit", "Create", "WMIAdmin")
+
+<ul>
+@foreach (var ns in @Model.namespaces)
+{
+    <li>@Html.ActionLink((string) @ns.ToString(), "OpenWMINamespace", "WMIAdmin", new { namespaceName = ns.ToString() } )</li>
+}
+</ul>

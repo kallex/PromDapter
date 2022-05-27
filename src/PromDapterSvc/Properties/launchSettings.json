@@ -20,7 +20,7 @@
     "PromDapterSvc": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "metrics",
+      "launchUrl": "wmiadmin",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
