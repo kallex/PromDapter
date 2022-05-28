@@ -123,12 +123,12 @@ namespace PromDapterSvc.Controllers
                 foreach (var managementBaseObject in mosResult)
                 {
                     var propertyData = managementBaseObject.Properties.Cast<PropertyData>().ToArray();
-                    if (dataTable.Columns.Count == 0)
-                    {
-                        var dataColumns = propertyData.Select(item => new DataColumn(item.Name)).ToArray();
-                        dataTable.Columns.AddRange(dataColumns);
-                    }
 
+                    var missingColumns = propertyData
+                        .Where(prop => dataTable.Columns.Contains(prop.Name) == false)
+                        .Select(item => new DataColumn(item.Name)).ToArray();
+                    dataTable.Columns.AddRange(missingColumns);
+                    
                     var dataRow = dataTable.NewRow();
                     foreach (var prop in propertyData)
                     {
