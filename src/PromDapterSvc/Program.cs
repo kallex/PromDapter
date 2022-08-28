@@ -22,7 +22,7 @@ namespace PromDapterSvc
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls("http://0.0.0.0:10445");
+                    webBuilder.UseUrls("http://0.0.0.0:10446");
                 })
                 .ConfigureLogging(loggingBuilder =>
                 {

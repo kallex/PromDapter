@@ -230,6 +230,8 @@ namespace PrometheusProcessor
                 // Above 4 we're starting to get diminishing returns; tested on 16 Core Ryzen 3950X with 370 metrics
                 // thus we estimate around 100 per core is sensible metric worthwhile the scheduling
                 var degreeOfParallelism = (int) Math.Ceiling(itemCount / MinimumAmountPerCore);
+                if (degreeOfParallelism < 1)
+                    degreeOfParallelism = 1;
                 if (Debugger.IsAttached)
                     degreeOfParallelism = 1;
                 var parallelBag = new ConcurrentBag<(string helpKey, string typeString, string[] metricLines)>();
