@@ -13,10 +13,10 @@
   <ItemGroup>
     <PackageReference Include="HWiNFODataProvider" Version="2021.402.23" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="PromDapterDeclarations" Version="2021.402.23" />
-    <PackageReference Include="SharpYaml" Version="1.9.1" />
-    <PackageReference Include="YamlDotNet" Version="11.2.1" />
+    <PackageReference Include="SharpYaml" Version="2.1.0" />
+    <PackageReference Include="YamlDotNet" Version="12.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\WMIDataProvider\WMIDataProvider.csproj" />

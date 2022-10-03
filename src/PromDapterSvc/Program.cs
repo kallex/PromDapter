@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -13,16 +14,36 @@ namespace PromDapterSvc
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                //.AddJsonFile("hosting.json", optional: true)
+                .AddJsonFile($"appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
+                //.AddCommandLine(args)
+                //.AddEnvironmentVariables()
+                .Build();
+            CreateHostBuilder(args, config).Build().Run();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+        public class AppConfig
+        {
+            public string ServerUrl { get; set; }
+        } 
+
+        public static IHostBuilder CreateHostBuilder(string[] args, IConfigurationRoot configurationRoot) 
+        {
+            var appConfig = configurationRoot.GetSection(nameof(AppConfig)).Get<AppConfig>();
+
+            var builder = Host.CreateDefaultBuilder(args)
                 .UseWindowsService()
+                //.UseConfig
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    //webBuilder.UseConfiguration(config);
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls("http://0.0.0.0:10445");
+                    webBuilder.UseUrls(appConfig.ServerUrl);
+                    //webBuilder.UseUrls("http://0.0.0.0:10445");
                 })
                 .ConfigureLogging(loggingBuilder =>
                 {
@@ -35,5 +56,7 @@ namespace PromDapterSvc
                         logSettings.Filter = (s, level) => true;
                     });*/
                 });
+            return builder;
+        }
     }
 }
