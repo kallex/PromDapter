@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="HWiNFODataProvider" Version="2021.402.23" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="PromDapterDeclarations" Version="2021.402.23" />
     <PackageReference Include="SharpYaml" Version="1.9.1" />
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
